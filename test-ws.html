@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>AFF Messagerie — Référence d'intégration</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; height: 100vh; background: #1a1a2e; color: #e0e0e0; }
+.sidebar { width: 280px; background: #16213e; padding: 16px; display: flex; flex-direction: column; border-right: 1px solid #2a2a4e; }
+.main { flex: 1; display: flex; flex-direction: column; }
+input, button, select { padding: 8px 12px; border-radius: 6px; border: 1px solid #3a3a5e; background: #2a2a3e; color: #e0e0e0; font-size: 13px; }
+button { cursor: pointer; background: #3b82f6; color: white; border: none; font-weight: 500; }
+button:hover { background: #2563eb; }
+button.danger { background: #ef4444; }
+button.success { background: #22c55e; }
+button.secondary { background: #475569; }
+h3 { font-size: 14px; color: #93c5fd; margin: 12px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+#convList { flex: 1; overflow-y: auto; margin: 8px 0; }
+.conv-item { padding: 10px; border-radius: 6px; cursor: pointer; margin: 4px 0; border: 1px solid transparent; transition: all 0.15s; }
+.conv-item:hover { background: #2a2a4e; }
+.conv-item.active { background: #3b82f6; border-color: #3b82f6; }
+.conv-item .name { font-weight: 600; font-size: 13px; }
+.conv-item .preview { font-size: 11px; color: #93c5fd; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header { padding: 12px 20px; background: #16213e; border-bottom: 1px solid #2a2a4e; display: flex; align-items: center; gap: 12px; }
+.header .title { font-weight: 600; font-size: 15px; flex: 1; }
+.messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 70%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
+.msg.mine { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 4px; }
+.msg.theirs { align-self: flex-start; background: #2a2a3e; border-bottom-left-radius: 4px; }
+.msg .sender { font-size: 10px; font-weight: 600; color: #93c5fd; margin-bottom: 2px; }
+.msg .time { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
+.typing-indicator { font-size: 11px; color: #4ade80; padding: 4px 20px; font-style: italic; }
+.input-area { padding: 12px 20px; background: #16213e; border-top: 1px solid #2a2a4e; display: flex; gap: 8px; }
+.input-area input { flex: 1; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 10; }
+.modal { background: #1e293b; padding: 24px; border-radius: 12px; width: 360px; }
+.modal h3 { margin-bottom: 12px; }
+.modal input, .modal select { width: 100%; margin: 6px 0; }
+.modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.badge.online { background: #22c55e; color: black; }
+.badge.offline { background: #475569; color: white; }
+.logs { height: 150px; overflow-y: auto; background: #0a0a1e; padding: 8px; border-top: 1px solid #2a2a4e; font-size: 11px; font-family: monospace; }
+.logs .log { padding: 2px 0; border-bottom: 1px solid #111; }
+.logs .log.in { color: #4ade80; }
+.logs .log.out { color: #facc15; }
+.logs .log.info { color: #93c5fd; }
+.logs .log.error { color: #f87171; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h3>🔐 Connexion</h3>
+  <input type="text" id="loginIdentifier" placeholder="Username ou email" value="admin">
+  <input type="password" id="loginPassword" placeholder="Mot de passe" value="Admin123!" style="margin:6px 0;">
+  <button onclick="doLogin()" style="width:100%;">Se connecter</button>
+  <div id="userInfo" style="font-size:12px;color:#94a3b8;margin:4px 0;"></div>
+
+  <h3>💬 Conversations</h3>
+  <div id="convList"><div style="color:#64748b;font-size:12px;">Connectez-vous d'abord</div></div>
+
+  <div style="display:flex;gap:6px;">
+    <button onclick="showNewConv()" class="secondary" style="flex:1;font-size:12px;">+ Nouvelle</button>
+    <button onclick="subscribeToCommunities()" class="secondary" style="flex:1;font-size:12px;">S'abonner</button>
+  </div>
+</div>
+
+<!-- Main chat -->
+<div class="main">
+  <div class="header">
+    <span class="title" id="chatTitle">Sélectionnez une conversation</span>
+    <span id="presenceBadge"></span>
+  </div>
+  <div class="messages" id="messages">
+    <div style="color:#64748b;text-align:center;margin-top:40px;">👈 Choisissez une conversation à gauche</div>
+  </div>
+  <div class="typing-indicator" id="typingIndicator"></div>
+  <div class="input-area">
+    <input type="text" id="messageInput" placeholder="Tapez votre message..." disabled onkeydown="if(event.key==='Enter')sendMessage()">
+    <button onclick="sendMessage()" id="sendBtn" disabled>Envoyer</button>
+  </div>
+  <div class="logs" id="logs"></div>
+</div>
+
+<!-- Modal new conversation -->
+<div class="modal-overlay" id="newConvModal">
+  <div class="modal">
+    <h3>Nouvelle conversation</h3>
+    <select id="convType" onchange="toggleConvType()">
+      <option value="1">Directe (1:1)</option>
+      <option value="2">Groupe</option>
+    </select>
+    <div id="directFields">
+      <input type="number" id="userId2" placeholder="ID de l'autre utilisateur">
+    </div>
+    <div id="groupFields" style="display:none;">
+      <input type="text" id="groupName" placeholder="Nom du groupe">
+      <input type="text" id="groupDesc" placeholder="Description">
+    </div>
+    <div class="actions">
+      <button onclick="hideNewConv()" class="secondary">Annuler</button>
+      <button onclick="createConversation()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const API = 'http://localhost:3000/api';
+let token = '', userId, username, socket, activeConvId = null;
+
+function log(msg, type='info') {
+  const d = document.getElementById('logs');
+  const el = document.createElement('div');
+  el.className = 'log ' + type;
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  d.appendChild(el); d.scrollTop = d.scrollHeight;
+}
+
+async function doLogin() {
+  const identifier = document.getElementById('loginIdentifier').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({identifier, password})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    token = data.access_token;
+    userId = data.user.id;
+    username = data.user.username;
+    document.getElementById('userInfo').innerHTML = `👤 <b>${username}</b> (id:${userId}) <span class="badge online">connecté</span>`;
+    log('✅ Login réussi — ' + username, 'in');
+    connectSocket();
+    loadConversations();
+  } catch(e) { log('❌ Login: ' + e.message, 'error'); }
+}
+
+function connectSocket() {
+  if (socket) socket.disconnect();
+  socket = io('http://localhost:3000/chat', { auth: { token }, transports: ['websocket'] });
+  socket.on('connect', () => log('🔌 Socket connecté', 'info'));
+  socket.on('disconnect', () => log('🔌 Socket déconnecté', 'error'));
+  socket.on('new_message', (msg) => {
+    log(`📩 [${msg.sender_username}] ${msg.contenu}`, 'in');
+    if (msg.conversation_id === activeConvId) appendMessage(msg, false);
+    loadConversations();
+  });
+  socket.on('user_typing', (d) => {
+    if (d.conversation_id === activeConvId) {
+      document.getElementById('typingIndicator').textContent = `${d.username} est en train d'écrire...`;
+      setTimeout(() => { if (document.getElementById('typingIndicator').textContent.includes(d.username)) document.getElementById('typingIndicator').textContent = ''; }, 6000);
+    }
+  });
+  socket.on('user_presence', (d) => log(`👤 User ${d.user_id} → ${d.status}`, d.status==='online'?'in':'error'));
+}
+
+async function loadConversations() {
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/messagerie/conversations`, { headers: { Authorization: `Bearer ${token}` } });
+    const convs = await res.json();
+    const list = document.getElementById('convList');
+    list.innerHTML = convs.length === 0 ? '<div style="color:#64748b;font-size:12px;">Aucune conversation</div>' : '';
+    convs.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'conv-item' + (c.id === activeConvId ? ' active' : '');
+      el.innerHTML = `<div class="name">${c.nom || `Conv #${c.id}`}</div><div class="preview">${c.last_message?.contenu?.substring(0,40) || 'Pas de messages'}</div>`;
+      el.onclick = () => selectConversation(c.id);
+      list.appendChild(el);
+    });
+  } catch(e) { log('❌ Chargement conversations: ' + e.message, 'error'); }
+}
+
+async function selectConversation(id) {
+  activeConvId = id;
+  if (socket) { socket.emit('join_conversation', { conversation_id: id }); }
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.conv-item').forEach(el => { if (el.textContent.includes('#' + id) || el.querySelector('.name')?.textContent?.includes('#' + id)) el.classList.add('active'); });
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('messageInput').disabled = false;
+  document.getElementById('sendBtn').disabled = false;
+  try {
+    const res = await fetch(`${API}/messagerie/conversations/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    const conv = await res.json();
+    document.getElementById('chatTitle').textContent = conv.nom || `Conversation #${id}`;
+    loadMessages(id);
+  } catch(e) { log('❌ ' + e.message, 'error'); }
+}
+
+async function loadMessages(convId) {
+  try {
+    const res = await fetch(`${API}/messagerie/conversations/${convId}/messages`, { headers: { Authorization: `Bearer ${token}` } });
+    const result = await res.json();
+    const items = result.data || result;
+    const container = document.getElementById('messages');
+    container.innerHTML = '';
+    (items || []).reverse().forEach(m => appendMessage(m, m.sender_id === userId));
+  } catch(e) { log('❌ ' + e.message, 'error'); }
+}
+
+function appendMessage(msg, isMine) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + (isMine ? 'mine' : 'theirs');
+  el.innerHTML = `${isMine ? '' : `<div class="sender">${msg.sender_username || 'User #'+msg.sender_id}</div>`}<div>${msg.contenu}</div><div class="time">${new Date(msg.sent_at).toLocaleTimeString('fr-FR')}</div>`;
+  document.getElementById('messages').appendChild(el);
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const contenu = input.value.trim();
+  if (!contenu || !activeConvId || !socket) return;
+  socket.emit('send_message', { conversation_id: activeConvId, contenu });
+  log(`📤 Moi: ${contenu}`, 'out');
+  input.value = '';
+  socket.emit('stop_typing', { conversation_id: activeConvId });
+}
+
+document.getElementById('messageInput').addEventListener('input', () => {
+  if (socket && activeConvId) socket.emit('typing', { conversation_id: activeConvId });
+});
+
+function showNewConv() { document.getElementById('newConvModal').style.display = 'flex'; }
+function hideNewConv() { document.getElementById('newConvModal').style.display = 'none'; }
+
+function toggleConvType() {
+  const type = document.getElementById('convType').value;
+  document.getElementById('directFields').style.display = type === '1' ? 'block' : 'none';
+  document.getElementById('groupFields').style.display = type === '2' ? 'block' : 'none';
+}
+
+async function createConversation() {
+  const type_id = parseInt(document.getElementById('convType').value);
+  const body = { type_id };
+  if (type_id === 1) body.user2_id = parseInt(document.getElementById('userId2').value);
+  else { body.nom = document.getElementById('groupName').value; body.description = document.getElementById('groupDesc').value; }
+  try {
+    const res = await fetch(`${API}/messagerie/conversations`, {
+      method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    log('✅ Conversation créée', 'in');
+    hideNewConv();
+    loadConversations();
+  } catch(e) { log('❌ ' + e.message, 'error'); }
+}
+
+async function subscribeToCommunities() {
+  try {
+    const res = await fetch(`${API}/communaute`, { headers: { Authorization: `Bearer ${token}` } });
+    const communautes = await res.json();
+    for (const c of communautes) {
+      await fetch(`${API}/communaute/${c.id}/subscribe`, { method:'POST', headers:{Authorization:`Bearer ${token}`} });
+    }
+    log(`✅ Abonné à ${communautes.length} communautés`, 'in');
+    loadConversations();
+  } catch(e) { log('❌ ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>

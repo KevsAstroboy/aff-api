@@ -1,0 +1,241 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../auth/guards/rbac.guard';
+import { RequireFeature } from '../auth/guards/rbac.decorator';
+import { {{modelName}}Service } from './{{kebabName}}.service';
+import { Create{{modelName}}Dto } from './dto/create-{{kebabName}}.dto';
+import { Update{{modelName}}Dto } from './dto/update-{{kebabName}}.dto';
+import { {{modelName}}ResponseDto } from './dto/{{kebabName}}-response.dto';
+
+@ApiTags('{{modelName}}')
+@Controller('{{routeName}}')
+export class {{modelName}}Controller {
+  constructor(private readonly {{camelName}}Service: {{modelName}}Service) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Lister les {{labelPlural}}',
+    description: 'Retourne tous les enregistrements actifs (non supprimés).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste des {{labelPlural}}',
+    type: [{{modelName}}ResponseDto],
+  })
+  findAll() {
+    return this.{{camelName}}Service.findAll();
+  }
+
+  @Get('criteria')
+  @ApiOperation({
+    summary: 'Recherche avancée',
+    description: 'Filtrage, tri, pagination via paramètres de requête.',
+  })
+  @ApiQuery({ name: 'sort', required: false, example: '-created_at' })
+  @ApiQuery({ name: 'page', required: false, example: '1' })
+  @ApiQuery({ name: 'size', required: false, example: '20' })
+  @ApiQuery({ name: 'fields', required: false, example: 'id,libelle' })
+  @ApiQuery({ name: 'include', required: false })
+  @ApiResponse({
+    status: 200,
+    description: 'Résultats paginés',
+  })
+  getByCriteria(@Query() query: Record<string, string>) {
+    return this.{{camelName}}Service.getByCriteria(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Détail {{label}}',
+    description: 'Retourne un enregistrement par son ID.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Détail',
+    type: {{modelName}}ResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '{{label}} introuvable',
+    schema: {
+      example: {
+        message: '{{label}} introuvable',
+        error: 'Not Found',
+        statusCode: 404,
+      },
+    },
+  })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.{{camelName}}Service.findOne(id);
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('{{featureCode}}')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Créer un {{label}}',
+    description: 'Réservé aux administrateurs.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '{{label}} créé',
+    type: {{modelName}}ResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides',
+    schema: {
+      example: {
+        message: ['libelle must be shorter than or equal to 255 characters'],
+        error: 'Bad Request',
+        statusCode: 400,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Non authentifié',
+    schema: {
+      example: { message: 'Unauthorized', statusCode: 401 },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission refusée',
+    schema: {
+      example: {
+        message: 'Permission refusée : {{featureCode}}',
+        error: 'Forbidden',
+        statusCode: 403,
+      },
+    },
+  })
+  create(@Body() dto: Create{{modelName}}Dto) {
+    return this.{{camelName}}Service.create(dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('{{featureCode}}')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Modifier un {{label}}',
+    description: 'Réservé aux administrateurs.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '{{label}} modifié',
+    type: {{modelName}}ResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides',
+    schema: {
+      example: {
+        message: ['libelle must be shorter than or equal to 255 characters'],
+        error: 'Bad Request',
+        statusCode: 400,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Non authentifié',
+    schema: {
+      example: { message: 'Unauthorized', statusCode: 401 },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission refusée',
+    schema: {
+      example: {
+        message: 'Permission refusée : {{featureCode}}',
+        error: 'Forbidden',
+        statusCode: 403,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: '{{label}} introuvable',
+    schema: {
+      example: {
+        message: '{{label}} introuvable',
+        error: 'Not Found',
+        statusCode: 404,
+      },
+    },
+  })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: Update{{modelName}}Dto,
+  ) {
+    return this.{{camelName}}Service.update(id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('{{featureCode}}')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Supprimer un {{label}}',
+    description: 'Soft-delete. Réservé aux administrateurs.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '{{label}} supprimé',
+    type: {{modelName}}ResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Non authentifié',
+    schema: {
+      example: { message: 'Unauthorized', statusCode: 401 },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permission refusée',
+    schema: {
+      example: {
+        message: 'Permission refusée : {{featureCode}}',
+        error: 'Forbidden',
+        statusCode: 403,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: '{{label}} introuvable',
+    schema: {
+      example: {
+        message: '{{label}} introuvable',
+        error: 'Not Found',
+        statusCode: 404,
+      },
+    },
+  })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.{{camelName}}Service.remove(id);
+  }
+}

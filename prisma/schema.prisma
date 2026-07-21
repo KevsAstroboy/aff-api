@@ -1,0 +1,617 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model award_category {
+  id            Int           @id @default(autoincrement())
+  edition_id    Int?
+  theme_id      Int?
+  libelle       String?       @db.VarChar(255)
+  code          String?       @db.VarChar(255)
+  description   String?       @db.VarChar(255)
+  is_grand_prix Boolean?      @default(false)
+  created_at    DateTime?     @db.Timestamp(6)
+  is_deleted    Boolean?      @default(false)
+  edition       edition?      @relation(fields: [edition_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  award_theme   award_theme?  @relation(fields: [theme_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  award_result  award_result?
+  candidature   candidature[]
+  vote_public   vote_public[]
+}
+
+model award_result {
+  id                      Int             @id @default(autoincrement())
+  categorie_id            Int?            @unique
+  candidature_gagnante_id Int?
+  announced_at            DateTime?       @db.Timestamp(6)
+  candidature             candidature?    @relation(fields: [candidature_gagnante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  award_category          award_category? @relation(fields: [categorie_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model award_theme {
+  id             Int              @id
+  libelle        String?          @db.VarChar(255)
+  code           String?          @db.VarChar(255)
+  ordre          Int?
+  award_category award_category[]
+}
+
+model candidature {
+  id                 Int                 @id @default(autoincrement())
+  user_id            Int?
+  categorie_id       Int?
+  edition_id         Int?
+  description        String?
+  portfolio_url      String?             @db.VarChar(255)
+  statut_id          Int?
+  submitted_at       DateTime?           @db.Timestamp(6)
+  created_at         DateTime?           @db.Timestamp(6)
+  updated_at         DateTime?           @db.Timestamp(6)
+  is_deleted         Boolean?            @default(false)
+  award_result       award_result[]
+  award_category     award_category?     @relation(fields: [categorie_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  edition            edition?            @relation(fields: [edition_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statut_candidature statut_candidature? @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user               user?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  candidature_media  candidature_media[]
+  jury_vote          jury_vote[]
+  vote_public        vote_public[]
+
+  @@unique([user_id, categorie_id])
+  @@index([categorie_id], map: "idx_candidature_categorie")
+  @@index([edition_id], map: "idx_candidature_edition")
+}
+
+model candidature_media {
+  id             Int          @id @default(autoincrement())
+  candidature_id Int?
+  media_type_id  Int?
+  file_path      String?      @db.VarChar(255)
+  ordre          Int?
+  is_deleted     Boolean?     @default(false)
+  candidature    candidature? @relation(fields: [candidature_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  media_type     media_type?  @relation(fields: [media_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model cible_type {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  signalement signalement[]
+}
+
+model commentaire {
+  id                    Int           @id @default(autoincrement())
+  publication_id        Int?
+  user_id               Int?
+  contenu               String?
+  parent_commentaire_id Int?
+  created_at            DateTime?     @db.Timestamp(6)
+  updated_at            DateTime?     @db.Timestamp(6)
+  deleted_at            DateTime?     @db.Timestamp(6)
+  is_deleted            Boolean?      @default(false)
+  created_by            Int?
+  updated_by            Int?
+  deleted_by            Int?
+  commentaire           commentaire?  @relation("commentaireTocommentaire", fields: [parent_commentaire_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_commentaire     commentaire[] @relation("commentaireTocommentaire")
+  publication           publication?  @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                  user?         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([publication_id], map: "idx_commentaire_publication")
+}
+
+model communaute {
+  id                 Int               @id
+  libelle            String?           @db.VarChar(255)
+  code               String?           @db.VarChar(255)
+  description        String?           @db.VarChar(255)
+  couleur            String?           @db.VarChar(50)
+  icon_path          String?           @db.VarChar(255)
+  membres_count      Int?              @default(0)
+  publications_count Int?              @default(0)
+  is_active          Boolean?          @default(true)
+  created_at         DateTime?         @db.Timestamp(6)
+  updated_at         DateTime?         @db.Timestamp(6)
+  deleted_at         DateTime?         @db.Timestamp(6)
+  is_deleted         Boolean?          @default(false)
+  created_by         Int?
+  updated_by         Int?
+  deleted_by         Int?
+  masterclass        masterclass[]
+  publication        publication[]
+  user_communaute    user_communaute[]
+}
+
+model conversation {
+  id                                 Int                        @id @default(autoincrement())
+  type_id                            Int?
+  user1_id                           Int?
+  user2_id                           Int?
+  nom                                String?                    @db.VarChar(255)
+  description                        String?                    @db.VarChar(255)
+  is_canal_general                   Boolean?                   @default(false)
+  created_by                         Int?
+  created_at                         DateTime?                  @db.Timestamp(6)
+  is_deleted                         Boolean?                   @default(false)
+  user_conversation_created_byTouser user?                      @relation("conversation_created_byTouser", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  conversation_type                  conversation_type?         @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_conversation_user1_idTouser   user?                      @relation("conversation_user1_idTouser", fields: [user1_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_conversation_user2_idTouser   user?                      @relation("conversation_user2_idTouser", fields: [user2_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  conversation_participant           conversation_participant[]
+}
+
+model conversation_participant {
+  id              Int           @id @default(autoincrement())
+  conversation_id Int?
+  user_id         Int?
+  joined_at       DateTime?     @db.Timestamp(6)
+  dernier_lu_at   DateTime?     @db.Timestamp(6)
+  is_deleted      Boolean?      @default(false)
+  conversation    conversation? @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user            user?         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([conversation_id, user_id])
+  @@index([user_id], map: "idx_conversation_participant_user")
+}
+
+model conversation_type {
+  id           Int            @id
+  libelle      String?        @db.VarChar(50)
+  code         String?        @db.VarChar(255)
+  conversation conversation[]
+}
+
+model edition {
+  id                   Int                   @id @default(autoincrement())
+  annee                Int?
+  nom                  String?               @db.VarChar(255)
+  ville                String?               @db.VarChar(255)
+  lieu                 String?               @db.VarChar(255)
+  date_debut           DateTime?             @db.Date
+  date_fin             DateTime?             @db.Date
+  candidature_deadline DateTime?             @db.Timestamp(6)
+  ceremonie_date       DateTime?             @db.Timestamp(6)
+  statut_id            Int?
+  created_by           Int?
+  created_at           DateTime?             @db.Timestamp(6)
+  updated_at           DateTime?             @db.Timestamp(6)
+  deleted_at           DateTime?             @db.Timestamp(6)
+  is_deleted           Boolean?              @default(false)
+  award_category       award_category[]
+  candidature          candidature[]
+  user                 user?                 @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statut_edition       statut_edition?       @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  programme_evenement  programme_evenement[]
+}
+
+model favori_programme {
+  id                  Int                  @id @default(autoincrement())
+  user_id             Int?
+  evenement_id        Int?
+  created_at          DateTime?            @db.Timestamp(6)
+  is_deleted          Boolean?             @default(false)
+  programme_evenement programme_evenement? @relation(fields: [evenement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                user?                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, evenement_id])
+}
+
+model feature {
+  id             Int              @id @default(autoincrement())
+  parent_id      Int?
+  libelle        String?          @db.VarChar(255)
+  code           String?          @db.VarChar(255)
+  description    String?          @db.VarChar(255)
+  created_at     DateTime?        @db.Timestamp(6)
+  updated_at     DateTime?        @db.Timestamp(6)
+  deleted_at     DateTime?        @db.Timestamp(6)
+  is_deleted     Boolean?         @default(false)
+  created_by     Int?
+  updated_by     Int?
+  deleted_by     Int?
+  feature        feature?         @relation("featureTofeature", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_feature  feature[]        @relation("featureTofeature")
+  feature_profil feature_profil[]
+}
+
+model feature_profil {
+  id         Int       @id @default(autoincrement())
+  profil_id  Int?
+  feature_id Int?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  deleted_at DateTime? @db.Timestamp(6)
+  is_deleted Boolean?  @default(false)
+  created_by Int?
+  updated_by Int?
+  deleted_by Int?
+  feature    feature?  @relation(fields: [feature_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profil     profil?   @relation(fields: [profil_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([profil_id, feature_id])
+}
+
+model hashtag {
+  id                  Int                   @id @default(autoincrement())
+  libelle             String?               @unique @db.VarChar(255)
+  publications_count  Int?                  @default(0)
+  created_at          DateTime?             @db.Timestamp(6)
+  is_deleted          Boolean?              @default(false)
+  publication_hashtag publication_hashtag[]
+}
+
+model jury_vote {
+  id             Int          @id @default(autoincrement())
+  candidature_id Int?
+  jury_user_id   Int?
+  score          Int?
+  commentaire    String?
+  created_at     DateTime?    @db.Timestamp(6)
+  is_deleted     Boolean?     @default(false)
+  candidature    candidature? @relation(fields: [candidature_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user           user?        @relation(fields: [jury_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([candidature_id, jury_user_id])
+}
+
+model lieu {
+  id                  Int                   @id
+  libelle             String?               @db.VarChar(255)
+  capacite            Int?
+  is_deleted          Boolean?              @default(false)
+  programme_evenement programme_evenement[]
+}
+
+model masterclass {
+  id                      Int                       @id @default(autoincrement())
+  evenement_id            Int?                      @unique
+  communaute_id           Int?
+  mode_diffusion_id       Int?
+  meeting_url             String?                   @db.VarChar(255)
+  max_participants        Int?
+  participants_count      Int?                      @default(0)
+  statut_id               Int?
+  created_at              DateTime?                 @db.Timestamp(6)
+  updated_at              DateTime?                 @db.Timestamp(6)
+  is_deleted              Boolean?                  @default(false)
+  communaute              communaute?               @relation(fields: [communaute_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  programme_evenement     programme_evenement?      @relation(fields: [evenement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mode_diffusion          mode_diffusion?           @relation(fields: [mode_diffusion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statut_masterclass      statut_masterclass?       @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  masterclass_inscription masterclass_inscription[]
+}
+
+model masterclass_inscription {
+  id               Int               @id @default(autoincrement())
+  masterclass_id   Int?
+  user_id          Int?
+  role_id          Int?
+  inscrit_at       DateTime?         @db.Timestamp(6)
+  is_deleted       Boolean?          @default(false)
+  masterclass      masterclass?      @relation(fields: [masterclass_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  masterclass_role masterclass_role? @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user             user?             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([masterclass_id, user_id])
+  @@index([masterclass_id], map: "idx_masterclass_inscription_masterclass")
+}
+
+model masterclass_role {
+  id                      Int                       @id
+  libelle                 String?                   @db.VarChar(50)
+  code                    String?                   @db.VarChar(255)
+  masterclass_inscription masterclass_inscription[]
+}
+
+model media_type {
+  id                Int                 @id
+  libelle           String?             @db.VarChar(50)
+  code              String?             @db.VarChar(255)
+  candidature_media candidature_media[]
+}
+
+model mode_diffusion {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  masterclass masterclass[]
+}
+
+model profil {
+  id               Int              @id
+  libelle          String?          @db.VarChar(255)
+  code             String?          @db.VarChar(255)
+  features_version Int?             @default(1)
+  created_at       DateTime?        @db.Timestamp(6)
+  updated_at       DateTime?        @db.Timestamp(6)
+  deleted_at       DateTime?        @db.Timestamp(6)
+  is_deleted       Boolean?         @default(false)
+  created_by       Int?
+  updated_by       Int?
+  deleted_by       Int?
+  feature_profil   feature_profil[]
+  user_profil      user_profil[]
+}
+
+model programme_evenement {
+  id                Int                @id @default(autoincrement())
+  edition_id        Int?
+  type_evenement_id Int?
+  titre             String?            @db.VarChar(255)
+  description       String?
+  jour              DateTime?          @db.Date
+  heure_debut       DateTime?          @db.Time(6)
+  heure_fin         DateTime?          @db.Time(6)
+  lieu_id           Int?
+  is_hot            Boolean?           @default(false)
+  created_at        DateTime?          @db.Timestamp(6)
+  updated_at        DateTime?          @db.Timestamp(6)
+  is_deleted        Boolean?           @default(false)
+  favori_programme  favori_programme[]
+  masterclass       masterclass?
+  edition           edition?           @relation(fields: [edition_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lieu              lieu?              @relation(fields: [lieu_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type_evenement    type_evenement?    @relation(fields: [type_evenement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([edition_id], map: "idx_programme_edition")
+  @@index([jour], map: "idx_programme_jour")
+}
+
+model publication {
+  id                         Int                          @id @default(autoincrement())
+  user_id                    Int?
+  communaute_id              Int?
+  contenu                    String?
+  statut_id                  Int?
+  reactions_count            Int?                         @default(0)
+  commentaires_count         Int?                         @default(0)
+  partages_count             Int?                         @default(0)
+  created_at                 DateTime?                    @db.Timestamp(6)
+  updated_at                 DateTime?                    @db.Timestamp(6)
+  deleted_at                 DateTime?                    @db.Timestamp(6)
+  is_deleted                 Boolean?                     @default(false)
+  created_by                 Int?
+  updated_by                 Int?
+  deleted_by                 Int?
+  commentaire                commentaire[]
+  communaute                 communaute?                  @relation(fields: [communaute_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statut_publication         statut_publication?          @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                       user?                        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  publication_hashtag        publication_hashtag[]
+  publication_media          publication_media[]
+  publication_reaction_count publication_reaction_count[]
+  reaction                   reaction[]
+
+  @@index([communaute_id], map: "idx_publication_communaute")
+  @@index([user_id], map: "idx_publication_user")
+}
+
+model publication_hashtag {
+  id             Int          @id @default(autoincrement())
+  publication_id Int?
+  hashtag_id     Int?
+  is_deleted     Boolean?     @default(false)
+  hashtag        hashtag?     @relation(fields: [hashtag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  publication    publication? @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([publication_id, hashtag_id])
+}
+
+model publication_reaction_count {
+  publication_id   Int
+  reaction_type_id Int
+  count            Int?          @default(0)
+  publication      publication   @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reaction_type    reaction_type @relation(fields: [reaction_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([publication_id, reaction_type_id])
+}
+
+model reaction {
+  id               Int            @id @default(autoincrement())
+  user_id          Int?
+  publication_id   Int?
+  reaction_type_id Int?
+  created_at       DateTime?      @db.Timestamp(6)
+  is_deleted       Boolean?       @default(false)
+  publication      publication?   @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reaction_type    reaction_type? @relation(fields: [reaction_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user             user?          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, publication_id])
+  @@index([publication_id], map: "idx_reaction_publication")
+}
+
+model reaction_type {
+  id                         Int                          @id
+  libelle                    String?                      @db.VarChar(50)
+  emoji                      String?                      @db.VarChar(10)
+  code                       String?                      @db.VarChar(255)
+  publication_reaction_count publication_reaction_count[]
+  reaction                   reaction[]
+}
+
+model severite {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  signalement signalement[]
+}
+
+model signalement {
+  id                                         Int                 @id @default(autoincrement())
+  cible_type_id                              Int?
+  cible_id                                   Int?
+  signale_par_user_id                        Int?
+  motif                                      String?
+  severite_id                                Int?
+  statut_id                                  Int?
+  resolu_par_user_id                         Int?
+  resolu_at                                  DateTime?           @db.Timestamp(6)
+  created_at                                 DateTime?           @db.Timestamp(6)
+  updated_at                                 DateTime?           @db.Timestamp(6)
+  deleted_at                                 DateTime?           @db.Timestamp(6)
+  is_deleted                                 Boolean?            @default(false)
+  cible_type                                 cible_type?         @relation(fields: [cible_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_signalement_resolu_par_user_idTouser  user?               @relation("signalement_resolu_par_user_idTouser", fields: [resolu_par_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  severite                                   severite?           @relation(fields: [severite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_signalement_signale_par_user_idTouser user?               @relation("signalement_signale_par_user_idTouser", fields: [signale_par_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statut_signalement                         statut_signalement? @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cible_type_id, cible_id], map: "idx_signalement_cible")
+}
+
+model statut_candidature {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  candidature candidature[]
+}
+
+model statut_edition {
+  id      Int       @id
+  libelle String?   @db.VarChar(50)
+  code    String?   @db.VarChar(255)
+  edition edition[]
+}
+
+model statut_masterclass {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  masterclass masterclass[]
+}
+
+model statut_publication {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  publication publication[]
+}
+
+model statut_signalement {
+  id          Int           @id
+  libelle     String?       @db.VarChar(50)
+  code        String?       @db.VarChar(255)
+  signalement signalement[]
+}
+
+model type_evenement {
+  id                  Int                   @id
+  libelle             String?               @db.VarChar(50)
+  code                String?               @db.VarChar(255)
+  programme_evenement programme_evenement[]
+}
+
+model user {
+  id                                                Int                        @id @default(autoincrement())
+  nom                                               String?                    @db.VarChar(255)
+  prenom                                            String?                    @db.VarChar(255)
+  username                                          String?                    @db.VarChar(255)
+  email                                             String?                    @db.VarChar(255)
+  phone_numb                                        String?                    @db.VarChar(255)
+  password                                          String?                    @db.VarChar(255)
+  description                                       String?                    @db.VarChar(255)
+  profile_picture_path                              String?                    @db.VarChar(255)
+  is_officiel                                       Boolean?                   @default(false)
+  is_active                                         Boolean?                   @default(true)
+  created_at                                        DateTime?                  @db.Timestamp(6)
+  updated_at                                        DateTime?                  @db.Timestamp(6)
+  deleted_at                                        DateTime?                  @db.Timestamp(6)
+  is_deleted                                        Boolean?                   @default(false)
+  created_by                                        Int?
+  updated_by                                        Int?
+  deleted_by                                        Int?
+  is_default_password                               Boolean?                   @default(false)
+  candidature                                       candidature[]
+  commentaire                                       commentaire[]
+  conversation_conversation_created_byTouser        conversation[]             @relation("conversation_created_byTouser")
+  conversation_conversation_user1_idTouser          conversation[]             @relation("conversation_user1_idTouser")
+  conversation_conversation_user2_idTouser          conversation[]             @relation("conversation_user2_idTouser")
+  conversation_participant                          conversation_participant[]
+  edition                                           edition[]
+  favori_programme                                  favori_programme[]
+  jury_vote                                         jury_vote[]
+  masterclass_inscription                           masterclass_inscription[]
+  publication                                       publication[]
+  reaction                                          reaction[]
+  signalement_signalement_resolu_par_user_idTouser  signalement[]              @relation("signalement_resolu_par_user_idTouser")
+  signalement_signalement_signale_par_user_idTouser signalement[]              @relation("signalement_signale_par_user_idTouser")
+  user_communaute                                   user_communaute[]
+  user_profil                                       user_profil[]
+  vote_public                                       vote_public[]
+}
+
+model user_communaute {
+  id            Int         @id @default(autoincrement())
+  user_id       Int?
+  communaute_id Int?
+  joined_at     DateTime?   @db.Timestamp(6)
+  is_deleted    Boolean?    @default(false)
+  communaute    communaute? @relation(fields: [communaute_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user          user?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, communaute_id])
+}
+
+model user_profil {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  profil_id  Int?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  deleted_at DateTime? @db.Timestamp(6)
+  is_deleted Boolean?  @default(false)
+  created_by Int?
+  updated_by Int?
+  deleted_by Int?
+  profil     profil?   @relation(fields: [profil_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user       user?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, profil_id])
+}
+
+model vote_public {
+  id             Int             @id @default(autoincrement())
+  candidature_id Int?
+  categorie_id   Int?
+  user_id        Int?
+  voted_at       DateTime?       @db.Timestamp(6)
+  is_deleted     Boolean?        @default(false)
+  candidature    candidature?    @relation(fields: [candidature_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  award_category award_category? @relation(fields: [categorie_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user           user?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, categorie_id])
+}
+
+model otp {
+  id          Int       @id @default(autoincrement())
+  email       String    @db.VarChar(255)
+  code        String    @db.VarChar(6)
+  expires_at  DateTime  @db.Timestamp(6)
+  attempts    Int?      @default(0)
+  is_verified Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([email], map: "idx_otp_email")
+}
+
+model publication_media {
+  id             Int          @id @default(autoincrement())
+  publication_id Int?
+  file_path      String       @db.VarChar(255)
+  ordre          Int?         @default(0)
+  is_deleted     Boolean?     @default(false)
+  created_at     DateTime?    @default(now()) @db.Timestamp(6)
+  publication    publication? @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([publication_id], map: "idx_publication_media_pub")
+}

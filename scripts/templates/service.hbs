@@ -1,0 +1,125 @@
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CriteriaParser } from '../common/criteria/criteria-parser';
+import { CriteriaBuilder } from '../common/criteria/criteria.builder';
+import { PaginatedResponse } from '../common/criteria/types';
+import { Create{{modelName}}Dto } from './dto/create-{{kebabName}}.dto';
+import { Update{{modelName}}Dto } from './dto/update-{{kebabName}}.dto';
+
+@Injectable()
+export class {{modelName}}Service {
+  private readonly logger = new Logger({{modelName}}Service.name);
+  private readonly parser = new CriteriaParser();
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findAll() {
+    return this.prisma.{{prismaName}}.findMany({
+      {{#if hasIsDeleted}}
+      where: { is_deleted: false },
+      {{/if}}
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{name}}: true,
+        {{/each}}
+      },
+      {{/if}}
+      orderBy: { {{orderByField}}: 'desc' as const },
+    });
+  }
+
+  async findOne(id: number) {
+    const entity = await this.prisma.{{prismaName}}.findFirst({
+      where: { id{{#if hasIsDeleted}}, is_deleted: false{{/if}} },
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{name}}: true,
+        {{/each}}
+      },
+      {{/if}}
+    });
+    if (!entity) throw new NotFoundException('{{label}} introuvable');
+    return entity;
+  }
+
+  async create(dto: Create{{modelName}}Dto) {
+    {{#if hasCreatedAtOrUpdatedAt}}
+    const now = new Date();
+    {{/if}}
+    return this.prisma.{{prismaName}}.create({
+      data: {
+        ...dto,
+        {{#if hasCreatedAt}}
+        created_at: now,
+        {{/if}}
+      },
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{name}}: true,
+        {{/each}}
+      },
+      {{/if}}
+    });
+  }
+
+  async update(id: number, dto: Update{{modelName}}Dto) {
+    await this.findOne(id);
+    return this.prisma.{{prismaName}}.update({
+      where: { id },
+      data: { ...dto{{#if hasUpdatedAt}}, updated_at: new Date(){{/if}} },
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{name}}: true,
+        {{/each}}
+      },
+      {{/if}}
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+    {{#if hasIsDeleted}}
+    return this.prisma.{{prismaName}}.update({
+      where: { id },
+      data: { is_deleted: true{{#if hasDeletedAt}}, deleted_at: new Date(){{/if}} },
+    });
+    {{/if}}
+    {{#if hasNoIsDeleted}}
+    return this.prisma.{{prismaName}}.delete({
+      where: { id },
+    });
+    {{/if}}
+  }
+
+  async getByCriteria(query: Record<string, string>): Promise<PaginatedResponse<unknown>> {
+    const criteria = this.parser.parse(query);
+    const builder = new CriteriaBuilder('{{modelName}}');
+    const { where, orderBy, skip, take, select, include } = builder.build(criteria);
+
+    const whereClause = {{#if hasIsDeleted}}{ AND: [where, { is_deleted: false }] }{{/if}}{{#if hasNoIsDeleted}}where{{/if}};
+
+    const [items, total] = await Promise.all([
+      this.prisma.{{prismaName}}.findMany({
+        where: whereClause,
+        ...(orderBy ? { orderBy } : { orderBy: { {{orderByField}}: 'desc' as const } }),
+        skip,
+        take,
+        ...(select ? { select } : {}),
+        ...(include && !select ? { include } : {}),
+      }),
+      this.prisma.{{prismaName}}.count({ where: whereClause }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: criteria.page,
+      size: criteria.size,
+      pages: Math.ceil(total / criteria.size),
+    };
+  }
+}

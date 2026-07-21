@@ -1,0 +1,1 @@
+export const MESSAGE_MODEL = 'MESSAGE_MODEL';

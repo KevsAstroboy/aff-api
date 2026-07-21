@@ -1,0 +1,2426 @@
+{
+  "info": {
+    "name": "AFF API",
+    "description": "Africa Future Festival — Backend API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "aff-api"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  console.log('OTP sent: ' + pm.response.json().message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo\",\n  \"email\": \"demo@example.com\",\n  \"password\": \"Demo123!\",\n  \"nom\": \"Demo\",\n  \"prenom\": \"User\",\n  \"phone_numb\": \"+2250102030405\",\n  \"communaute_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.access_token) {",
+                  "    pm.collectionVariables.set('token', json.access_token);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@example.com\",\n  \"otp_code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-otp"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.access_token) {",
+                  "    pm.collectionVariables.set('token', json.access_token);",
+                  "  }",
+                  "  if (json.user && json.user.is_default_password) {",
+                  "    console.log('WARNING: default password — redirect to change-password');",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"demo\",\n  \"password\": \"Demo123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  console.log('Password changed — re-login to get fresh token');",
+                  "  pm.collectionVariables.set('token', '');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"OldP@ssw0rd!\",\n  \"new_password\": \"NewStr0ngP@ss!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Nouveau Nom\",\n  \"prenom\": \"Nouveau Prenom\",\n  \"phone_numb\": \"+2250102030405\",\n  \"description\": \"Ma nouvelle bio\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide.\n> ℹ️ Tous les champs sont optionnels. Seuls les champs fournis sont mis à jour."
+          }
+        },
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQ...\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile",
+                "photo"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide.\n> ℹ️ Image en base64 avec préfixe mimetype (max 5 Mo).\n> ℹ️ Remplace l'ancienne photo de profil."
+          }
+        }
+      ],
+      "description": "🔑 **Authentification** — inscription, connexion, OTP, changement de mot de passe.\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | Register, Verify OTP, Resend OTP, Login |\n| 🔐 Auth   | Change Password |\n"
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        }
+      ],
+      "description": "💚 **Health Check** — endpoint public de monitoring.\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | Health Check |\n"
+    },
+    {
+      "name": "Communauté",
+      "item": [
+        {
+          "name": "List Communities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Community",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Create Community",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Devs CI\",\n  \"description\": \"Communauté des développeurs ivoiriens\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_COMMUNAUTE` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Update Community",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Devs CI Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_COMMUNAUTE` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Delete Community",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_COMMUNAUTE` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Subscribe to Community",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/1/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "1",
+                "subscribe"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Unsubscribe from Community",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/1/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "1",
+                "subscribe"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        }
+      ],
+      "description": "👥 **Communautés** — CRUD et abonnements.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /:id, GET /get-by-criteria |\n| 🔐 Auth   | POST /:id/subscribe, DELETE /:id/subscribe |\n| 🛡️ Admin  | POST /, PATCH /:id, DELETE /:id (`GERER_COMMUNAUTE`) |\n"
+    },
+    {
+      "name": "Feed",
+      "item": [
+        {
+          "name": "List Feed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "communaute_id",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "hashtag_id",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Publication",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Create Publication",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenu\": \"Mon premier post!\",\n  \"communaute_id\": 1,\n  \"hashtags\": [\"AFF2026\", \"Cinema\"],\n  \"images\": [\"data:image/jpeg;base64,/9j/4AAQ...\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Update Publication",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenu\": \"Post mis à jour\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Propriétaire du post |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Delete Publication",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Propriétaire ou Admin |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Add Reaction",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"publication_id\": 1,\n  \"reaction_type_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1/reactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1",
+                "reactions"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Reactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1/reactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1",
+                "reactions"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"publication_id\": 1,\n  \"contenu\": \"Super!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1/commentaires",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1",
+                "commentaires"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Comments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1/commentaires",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1",
+                "commentaires"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/commentaires/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "commentaires",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Propriétaire ou Admin |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "List Hashtags",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/hashtags",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "hashtags"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        }
+      ],
+      "description": "📰 **Feed** — publications, réactions, commentaires, hashtags.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /:id, GET /get-by-criteria, GET /hashtags, GET /:id/reactions, GET /:id/commentaires |\n| 🔐 Auth   | POST /publications, POST /:id/reactions, POST /:id/commentaires |\n| 🔐 Auth   | PATCH /:id (propriétaire), DELETE /:id (propriétaire/admin) |\n"
+    },
+    {
+      "name": "Modération",
+      "item": [
+        {
+          "name": "Create Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cible_type_id\": 1,\n  \"cible_id\": 1,\n  \"motif\": \"Contenu inapproprié\",\n  \"severite_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "moderation"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "List Reports",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "moderation"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin / Modérateur |\n| Permission requise | `GERER_SIGNALEMENTS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Get Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/moderation/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin / Modérateur |\n| Permission requise | `GERER_SIGNALEMENTS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Resolve Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/moderation/1/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "1",
+                "resolve"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin / Modérateur |\n| Permission requise | `GERER_SIGNALEMENTS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        }
+      ],
+      "description": "🚨 **Modération** — signalements polymorphes.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🔐 Auth   | POST / (tout utilisateur peut signaler) |\n| 🛡️ Admin  | GET /, GET /:id, GET /get-by-criteria, PATCH /:id/resolve (`GERER_SIGNALEMENTS`) |\n"
+    },
+    {
+      "name": "Édition",
+      "item": [
+        {
+          "name": "List Editions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/editions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Current Edition",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/editions/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions",
+                "current"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Edition",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/editions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Create Edition",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"annee\": 2026,\n  \"nom\": \"AFF 2026\",\n  \"ville\": \"Abidjan\",\n  \"lieu\": \"Palais\",\n  \"date_debut\": \"2026-12-10\",\n  \"date_fin\": \"2026-12-15\",\n  \"statut_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/editions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_EDITION` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Update Edition",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lieu\": \"Palais de la Culture\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/editions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_EDITION` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Delete Edition",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/editions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "editions",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_EDITION` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        }
+      ],
+      "description": "📅 **Éditions** — gestion des éditions annuelles du festival.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /current, GET /:id, GET /get-by-criteria |\n| 🛡️ Admin  | POST /, PATCH /:id, DELETE /:id (`GERER_EDITION`) |\n"
+    },
+    {
+      "name": "Awards",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "categories"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"edition_id\": 1,\n  \"theme_id\": 1,\n  \"libelle\": \"Meilleur Film\",\n  \"code\": \"MEILLEUR_FILM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "categories"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_AWARDS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"libelle\": \"Meilleur Film Africain\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/categories/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "categories",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_AWARDS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Create Candidature",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categorie_id\": 1,\n  \"edition_id\": 1,\n  \"description\": \"Mon projet\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/candidatures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "candidatures"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "List Candidatures",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/candidatures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "candidatures"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Candidature",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/candidatures/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "candidatures",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Update Candidature Statut",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"statut_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/candidatures/1/statut",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "candidatures",
+                "1",
+                "statut"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_AWARDS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Jury Vote",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidature_id\": 1,\n  \"score\": 85\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/votes/jury",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "votes",
+                "jury"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Membre du jury |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Public Vote",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidature_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/votes/public",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "votes",
+                "public"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Vote Results",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/votes/results/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "votes",
+                "results",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        }
+      ],
+      "description": "🏆 **Awards** — catégories, candidatures, votes.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /categories, GET /get-by-criteria, GET /candidatures, GET /:id, GET /get-by-criteria, GET /votes/results/:id |\n| 🔐 Auth   | POST /candidatures, POST /candidatures/:id/medias, POST /votes/jury, POST /votes/public |\n| 🛡️ Admin  | POST /categories, PATCH /categories/:id, PATCH /candidatures/:id/statut (`GERER_AWARDS`) |\n"
+    },
+    {
+      "name": "Programme",
+      "item": [
+        {
+          "name": "List Events",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Get Event",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"edition_id\": 1,\n  \"type_evenement_id\": 2,\n  \"titre\": \"Intro Flutter\",\n  \"jour\": \"2026-12-11\",\n  \"heure_debut\": \"10:00:00\",\n  \"heure_fin\": \"12:00:00\",\n  \"lieu_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/programme",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_PROGRAMME` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Intro Flutter (Updated)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_PROGRAMME` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_PROGRAMME` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Create Masterclass",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"evenement_id\": 1,\n  \"communaute_id\": 1,\n  \"mode_diffusion_id\": 2,\n  \"meeting_url\": \"https://meet.example.com\",\n  \"max_participants\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/masterclass",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "masterclass"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_PROGRAMME` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Update Masterclass",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_participants\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/masterclass/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "masterclass",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `GERER_PROGRAMME` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Register to Masterclass",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/masterclass/1/inscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "masterclass",
+                "1",
+                "inscription"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Add to Favorites",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/1/favori",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "1",
+                "favori"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Favorites",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/favoris",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "favoris"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        }
+      ],
+      "description": "📋 **Programme** — événements, masterclass, inscriptions, favoris.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /:id, GET /get-by-criteria |\n| 🔐 Auth   | POST /masterclass/:id/inscription, POST /:id/favori, GET /favoris |\n| 🛡️ Admin  | POST /, PATCH /:id, DELETE /:id, POST /masterclass, PATCH /masterclass/:id (`GERER_PROGRAMME`) |\n"
+    },
+    {
+      "name": "Messagerie",
+      "item": [
+        {
+          "name": "List Conversations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Create Conversation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type_id\": 1,\n  \"user2_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Conversation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations",
+                "1"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Participant à la conversation |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Add Participant",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations/1/participants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations",
+                "1",
+                "participants"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Admin du groupe |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Remove Participant",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations/1/participants/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations",
+                "1",
+                "participants",
+                "3"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Admin du groupe |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/messagerie/conversations/1/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messagerie",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Participant à la conversation |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+          }
+        }
+      ],
+      "description": "💬 **Messagerie** — conversations et messages.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🔐 Auth   | Tous les endpoints — utilisateur connecté requis |\n| 🔐 Auth   | POST /:id/participants, DELETE /:id/participants/:userId (admin du groupe) |\n\n### 🧪 Tester les WebSockets\n\n**Postman ne supporte pas le protocole Socket.IO directement.**\n\nUtilise le fichier `test-ws.html` à la racine du projet :\n\n1. Ouvre `test-ws.html` dans ton navigateur\n2. Colle un token JWT (obtenu via POST /api/auth/login)\n3. Clique \"Se connecter\"\n4. Rejoins une conversation existante (id=1 = canal général)\n5. Envoie un message — les événements apparaissent en temps réel\n\n**Événements Socket.IO :**\n\n| Événement émis (client → serveur) | Description |\n|------------------------------------|-------------|\n| `join_conversation` | Rejoindre une room de conversation |\n| `leave_conversation` | Quitter une room |\n| `send_message` | Envoyer un message (contenu + conversation_id) |\n| `typing` | Indicateur \"en train d'écrire\" |\n| `stop_typing` | Arrêter l'indicateur |\n\n| Événement reçu (serveur → client) | Description |\n|------------------------------------|-------------|\n| `new_message` | Nouveau message dans la conversation |\n| `user_typing` | Un utilisateur est en train d'écrire |\n| `user_stop_typing` | Un utilisateur a arrêté d'écrire |\n| `user_presence` | Changement de présence (online/offline) |\n| `joined_conversation` | Confirmation de jointure de room |"
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats?period=month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Recent Reports",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/signalements/recent?limit=10&period=day",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "signalements",
+                "recent"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "period",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "User Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/stats?period=week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "week"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Content Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/stats?period=month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@aff.com\",\n  \"nom\": \"Nouveau\",\n  \"prenom\": \"User\",\n  \"profil_ids\": [1, 2],\n  \"is_officiel\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        }
+      ],
+      "description": "⚙️ **Administration** — dashboard et gestion utilisateurs.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🛡️ Admin  | Tous les endpoints (`ACCEDER_ADMIN`) |\n"
+    },
+    {
+      "name": "Media",
+      "description": "🖼️ **Media** — preview d'images MinIO via URLs présignées.\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /preview — redirection vers URL présignée (valide 1h) |",
+      "item": [
+        {
+          "name": "Preview Media",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/media/preview?path=aff-uploads/publications/1/image_1.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "media",
+                "preview"
+              ],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "aff-uploads/publications/1/image_1.png"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nRedirige (302) vers une URL présignée MinIO temporaire (valide 1h). Le frontend peut utiliser cette URL directement dans `<img src=\"...\">`.\n\n> ℹ️ Format du path : `bucket/objet` (ex: `aff-uploads/publications/6/image_1.png`)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Criteria DSL",
+      "item": [
+        {
+          "name": "GetByCriteria - Communautes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communaute/get-by-criteria?is_active.eq=true&sort=-membres_count&page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communaute",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "is_active.eq",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "-membres_count"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "GetByCriteria - Candidatures",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/awards/candidatures/get-by-criteria?statut_id.eq=1&fields=id,description,submitted_at&page=1&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "awards",
+                "candidatures",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "statut_id.eq",
+                  "value": "1"
+                },
+                {
+                  "key": "fields",
+                  "value": "id,description,submitted_at"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "GetByCriteria - Programme",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/get-by-criteria?edition_id.eq=1&include=lieu,type_evenement&sort=+jour",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "edition_id.eq",
+                  "value": "1"
+                },
+                {
+                  "key": "include",
+                  "value": "lieu,type_evenement"
+                },
+                {
+                  "key": "sort",
+                  "value": "+jour"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "GetByCriteria - Moderation",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/moderation/get-by-criteria?statut_id.eq=1&severite_id.eq=3&sort=-created_at",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "statut_id.eq",
+                  "value": "1"
+                },
+                {
+                  "key": "severite_id.eq",
+                  "value": "3"
+                },
+                {
+                  "key": "sort",
+                  "value": "-created_at"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin / Modérateur |\n| Permission requise | `GERER_SIGNALEMENTS` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        },
+        {
+          "name": "GetByCriteria - Publications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/get-by-criteria?communaute_id.eq=1&sort=-created_at&page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "communaute_id.eq",
+                  "value": "1"
+                },
+                {
+                  "key": "sort",
+                  "value": "-created_at"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
+          }
+        },
+        {
+          "name": "GetByCriteria - Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/get-by-criteria?email.nnull=true&sort=+username&fields=id,username,email,is_active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "email.nnull",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "+username"
+                },
+                {
+                  "key": "fields",
+                  "value": "id,username,email,is_active"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Qui peut appeler | Super Admin |\n| Permission requise | `ACCEDER_ADMIN` |\n\n> ⚠️ Nécessite un token Admin (JWT + RBAC)."
+          }
+        }
+      ],
+      "description": "🔍 **Criteria DSL** — exemples de recherche avancée avec filtres.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| Varie selon le module | Voir la section correspondante pour les règles d'accès |\n\n> ℹ️ Les endpoints `get-by-criteria` héritent des mêmes règles d'accès que le GET standard du module."
+    }
+  ]
+}

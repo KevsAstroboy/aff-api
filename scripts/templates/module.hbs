@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+import { {{modelName}}Controller } from './{{kebabName}}.controller';
+import { {{modelName}}Service } from './{{kebabName}}.service';
+import { AuthModule } from '../auth/auth.module';
+
+@Module({
+  imports: [AuthModule],
+  controllers: [{{modelName}}Controller],
+  providers: [{{modelName}}Service],
+})
+export class {{modelName}}Module {}
