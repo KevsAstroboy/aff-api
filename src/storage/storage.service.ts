@@ -80,6 +80,12 @@ export class StorageService implements OnModuleInit {
     return this.client.presignedGetObject(bucket, objectName, expirySeconds);
   }
 
+  async getObjectStream(bucket: string, objectName: string) {
+    const stat = await this.client.statObject(bucket, objectName);
+    const stream = await this.client.getObject(bucket, objectName);
+    return { stream, size: stat.size, contentType: stat.metaData?.['content-type'] };
+  }
+
   async deleteFile(bucket: string, objectName: string): Promise<void> {
     await this.client.removeObject(bucket, objectName);
   }

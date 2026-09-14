@@ -30,6 +30,9 @@ class AuthUserDto {
 
   @ApiProperty({ example: false, description: 'Si true, le front doit rediriger vers /change-password' })
   is_default_password: boolean;
+
+  @ApiPropertyOptional({ example: [1, 3], description: 'IDs des communautés de l\'utilisateur' })
+  communaute_ids?: number[];
 }
 
 class AuthProfilDto {

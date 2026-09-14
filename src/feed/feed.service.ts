@@ -6,12 +6,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CriteriaParser } from '../common/criteria/criteria-parser';
 import { CriteriaBuilder } from '../common/criteria/criteria.builder';
 import { PaginatedResponse } from '../common/criteria/types';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
 import { CreateCommentaireDto } from './dto/create-commentaire.dto';
+import { UpdateCommentStatutDto } from './dto/update-comment-statut.dto';
+import { UpdatePublicationStatutDto } from './dto/update-publication-statut.dto';
 import { Prisma } from '@prisma/client';
 
 const authorSelect = {
@@ -28,6 +31,7 @@ export class FeedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(userId: number, dto: CreatePublicationDto) {
@@ -105,6 +109,7 @@ export class FeedService {
   async findAll(query: {
     communaute_id?: number;
     hashtag_id?: number;
+    user_id?: number;
     page?: number;
     limit?: number;
   }) {
@@ -120,10 +125,8 @@ export class FeedService {
       where.communaute_id = query.communaute_id;
     }
 
-    if (query.hashtag_id) {
-      where.publication_hashtag = {
-        some: { hashtag_id: query.hashtag_id },
-      };
+    if (query.user_id) {
+      where.user_id = query.user_id;
     }
 
     const [publications, total] = await Promise.all([
@@ -131,9 +134,6 @@ export class FeedService {
         where,
         include: {
           user: { select: authorSelect },
-          publication_reaction_count: {
-            include: { reaction_type: { select: { id: true, code: true, emoji: true } } },
-          },
           publication_hashtag: {
             include: { hashtag: { select: { id: true, libelle: true } } },
           },
@@ -145,8 +145,10 @@ export class FeedService {
       this.prisma.publication.count({ where }),
     ]);
 
+    const counts = await this.reactionsByPublication(publications.map((p) => p.id));
+
     return {
-      data: publications.map((p) => this.formatPublication(p)),
+      data: publications.map((p) => this.formatPublication(p, counts.get(p.id))),
       meta: {
         page,
         limit,
@@ -156,14 +158,42 @@ export class FeedService {
     };
   }
 
+  private async reactionsByPublication(publicationIds: number[]) {
+    const map = new Map<
+      number,
+      { reaction_type_id: number | null; code?: string | null; emoji?: string | null; count: number }[]
+    >();
+    if (publicationIds.length === 0) return map;
+
+    const groups = await this.prisma.reaction.groupBy({
+      by: ['publication_id', 'reaction_type_id'],
+      where: { publication_id: { in: publicationIds }, is_deleted: false },
+      _count: { _all: true },
+    });
+
+    const types = await this.prisma.reaction_type.findMany();
+    const typeById = new Map(types.map((t) => [t.id, t]));
+
+    for (const g of groups) {
+      const t = g.reaction_type_id != null ? typeById.get(g.reaction_type_id) : null;
+      const arr = map.get(g.publication_id!) ?? [];
+      arr.push({
+        reaction_type_id: g.reaction_type_id,
+        code: t?.code,
+        emoji: t?.emoji,
+        count: g._count._all,
+      });
+      map.set(g.publication_id!, arr);
+    }
+
+    return map;
+  }
+
   async findOne(id: number) {
     const pub = await this.prisma.publication.findFirst({
       where: { id, is_deleted: false },
       include: {
         user: { select: authorSelect },
-        publication_reaction_count: {
-          include: { reaction_type: { select: { id: true, code: true, emoji: true } } },
-        },
         publication_hashtag: {
           include: { hashtag: { select: { id: true, libelle: true } } },
         },
@@ -192,8 +222,11 @@ export class FeedService {
       throw new NotFoundException('Publication introuvable');
     }
 
+    const counts = await this.reactionsByPublication([pub.id]);
+    const reactions = counts.get(pub.id) ?? [];
+
     return {
-      ...this.formatPublication(pub),
+      ...this.formatPublication(pub, reactions),
       commentaires: pub.commentaire.map((c) => ({
         id: c.id,
         publication_id: c.publication_id,
@@ -326,12 +359,6 @@ export class FeedService {
           where: { user_id_publication_id: { user_id: userId, publication_id: publicationId } },
         });
 
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE publication_reaction_count SET count = count - 1 WHERE publication_id = $1 AND reaction_type_id = $2`,
-          publicationId,
-          reactionTypeId,
-        );
-
         return { toggled: 'off', reaction_type_id: reactionTypeId, counts: await this.getReactions(publicationId) };
       }
 
@@ -340,17 +367,6 @@ export class FeedService {
         where: { user_id_publication_id: { user_id: userId, publication_id: publicationId } },
         data: { reaction_type_id: reactionTypeId, created_at: new Date() },
       });
-
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE publication_reaction_count SET count = count - 1 WHERE publication_id = $1 AND reaction_type_id = $2`,
-        publicationId,
-        oldTypeId,
-      );
-      await this.prisma.$executeRawUnsafe(
-        `INSERT INTO publication_reaction_count (publication_id, reaction_type_id, count) VALUES ($1, $2, 1) ON CONFLICT (publication_id, reaction_type_id) DO UPDATE SET count = publication_reaction_count.count + 1`,
-        publicationId,
-        reactionTypeId,
-      );
 
       return { toggled: 'changed', old_type_id: oldTypeId, new_type_id: reactionTypeId, counts: await this.getReactions(publicationId) };
     }
@@ -364,13 +380,23 @@ export class FeedService {
       },
     });
 
-    await this.prisma.$executeRawUnsafe(
-      `INSERT INTO publication_reaction_count (publication_id, reaction_type_id, count) VALUES ($1, $2, 1) ON CONFLICT (publication_id, reaction_type_id) DO UPDATE SET count = publication_reaction_count.count + 1`,
-      publicationId,
-      reactionTypeId,
-    );
+    const result = { toggled: 'on', reaction_type_id: reactionTypeId, counts: await this.getReactions(publicationId) };
+    this.emitReactionEvent(userId, pub.user_id!, publicationId, reactionTypeId);
+    return result;
+  }
 
-    return { toggled: 'on', reaction_type_id: reactionTypeId, counts: await this.getReactions(publicationId) };
+  private async emitReactionEvent(userId: number, pubOwnerId: number, publicationId: number, reactionTypeId: number) {
+    const reactionType = await this.prisma.reaction_type.findUnique({
+      where: { id: reactionTypeId },
+      select: { code: true },
+    });
+    this.eventEmitter.emit('reaction.toggled', {
+      authorId: userId,
+      authorUsername: '',
+      publicationOwnerId: pubOwnerId,
+      publicationId,
+      reactionType: reactionType?.code ?? 'HEART',
+    });
   }
 
   async getReactions(publicationId: number) {
@@ -382,18 +408,28 @@ export class FeedService {
       throw new NotFoundException('Publication introuvable');
     }
 
-    const counts = await this.prisma.publication_reaction_count.findMany({
-      where: { publication_id: publicationId },
-      include: { reaction_type: { select: { id: true, libelle: true, emoji: true, code: true } } },
+    const groups = await this.prisma.reaction.groupBy({
+      by: ['reaction_type_id'],
+      where: { publication_id: publicationId, is_deleted: false },
+      _count: { _all: true },
     });
 
-    return counts.map((c) => ({
-      reaction_type_id: c.reaction_type_id,
-      libelle: c.reaction_type.libelle,
-      emoji: c.reaction_type.emoji,
-      code: c.reaction_type.code,
-      count: c.count ?? 0,
-    }));
+    const types = await this.prisma.reaction_type.findMany();
+    const typeById = new Map(types.map((t) => [t.id, t]));
+
+    return groups
+      .map((g) => {
+        const t = typeById.get(g.reaction_type_id ?? -1);
+        if (!t) return null;
+        return {
+          reaction_type_id: g.reaction_type_id,
+          libelle: t.libelle,
+          emoji: t.emoji,
+          code: t.code,
+          count: g._count._all,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
   }
 
   async createCommentaire(userId: number, dto: CreateCommentaireDto) {
@@ -439,6 +475,13 @@ export class FeedService {
     await this.prisma.publication.update({
       where: { id: dto.publication_id },
       data: { commentaires_count: { increment: 1 } },
+    });
+
+    this.eventEmitter.emit('comment.created', {
+      authorId: userId,
+      authorUsername: commentaire.user?.username ?? 'Un utilisateur',
+      publicationOwnerId: pub.user_id!,
+      publicationId: dto.publication_id,
     });
 
     return {
@@ -546,6 +589,12 @@ export class FeedService {
     });
   }
 
+  async findAllReactionTypes() {
+    return this.prisma.reaction_type.findMany({
+      orderBy: { id: 'asc' },
+    });
+  }
+
   async createIfNotExists(libelle: string): Promise<number> {
     libelle = libelle.trim();
 
@@ -560,6 +609,150 @@ export class FeedService {
     });
 
     return created.id;
+  }
+
+  async getCommentairesByCriteria(query: Record<string, string>) {
+    const criteria = new CriteriaParser().parse(query);
+    const builder = new CriteriaBuilder('commentaire');
+    const { where, orderBy, skip, take, select, include } = builder.build(criteria);
+
+    const [items, total] = await Promise.all([
+      this.prisma.commentaire.findMany({
+        where: { AND: [where, { is_deleted: false }] },
+        include: {
+          user: { select: { id: true, username: true, profile_picture_path: true } },
+          publication: { select: { id: true, contenu: true } },
+        },
+        ...(orderBy ? { orderBy } : { orderBy: { created_at: 'desc' as const } }),
+        skip,
+        take,
+        ...(select ? { select } : {}),
+      }),
+      this.prisma.commentaire.count({ where: { AND: [where, { is_deleted: false }] } }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: criteria.page,
+      size: criteria.size,
+      pages: Math.ceil(total / criteria.size),
+    };
+  }
+
+  async updateCommentStatut(id: number, dto: UpdateCommentStatutDto) {
+    const comment = await this.prisma.commentaire.findFirst({
+      where: { id, is_deleted: false },
+    });
+    if (!comment) throw new NotFoundException('Commentaire introuvable');
+
+    return this.prisma.commentaire.update({
+      where: { id },
+      data: {
+        is_hidden: dto.is_hidden,
+        hidden_reason: dto.is_hidden ? dto.hidden_reason : null,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  async updatePublicationStatut(id: number, dto: UpdatePublicationStatutDto) {
+    const pub = await this.prisma.publication.findFirst({
+      where: { id, is_deleted: false },
+    });
+    if (!pub) throw new NotFoundException('Publication introuvable');
+
+    return this.prisma.publication.update({
+      where: { id },
+      data: { statut_id: dto.statut_id, updated_at: new Date() },
+      include: {
+        user: { select: { id: true, username: true, profile_picture_path: true } },
+      },
+    });
+  }
+
+  async getCountsByCommunaute() {
+    const rows = await this.prisma.publication.groupBy({
+      by: ['communaute_id'],
+      where: { is_deleted: false, statut_id: 1, communaute_id: { not: null } },
+      _count: { _all: true },
+    });
+    return rows.map((r) => ({
+      communaute_id: r.communaute_id,
+      count: r._count._all,
+    }));
+  }
+
+  async getMembresActifs(limit = 10) {
+    const LIMIT = Math.min(Math.max(limit, 1), 30);
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+
+    const [pubs, comments, reactions] = await Promise.all([
+      this.prisma.publication.findMany({
+        where: { is_deleted: false, created_at: { gte: since }, user_id: { not: null } },
+        select: { user_id: true },
+      }),
+      this.prisma.commentaire.findMany({
+        where: { is_deleted: false, created_at: { gte: since }, user_id: { not: null } },
+        select: { user_id: true },
+      }),
+      this.prisma.reaction.findMany({
+        where: { is_deleted: false, created_at: { gte: since }, user_id: { not: null } },
+        select: { user_id: true },
+      }),
+    ]);
+
+    const scores: Record<number, number> = {};
+    const bump = (id: number, w: number) => {
+      scores[id] = (scores[id] ?? 0) + w;
+    };
+    comments.forEach((c) => c.user_id && bump(c.user_id, 3));
+    reactions.forEach((r) => r.user_id && bump(r.user_id, 2));
+    pubs.forEach((p) => p.user_id && bump(p.user_id, 1));
+
+    const ids = Object.keys(scores)
+      .map(Number)
+      .sort((a, b) => scores[b] - scores[a])
+      .slice(0, LIMIT);
+
+    if (ids.length === 0) return [];
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: ids }, is_deleted: false },
+      select: {
+        id: true,
+        username: true,
+        nom: true,
+        prenom: true,
+        profile_picture_path: true,
+        user_communaute: {
+          where: { is_deleted: false },
+          select: { communaute: { select: { id: true, libelle: true, code: true } } },
+          orderBy: { joined_at: 'asc' },
+        },
+      },
+    });
+
+    const byId = new Map(users.map((u) => [u.id, u]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((u): u is NonNullable<typeof u> => !!u)
+      .map((u) => {
+        const communautes = (u.user_communaute ?? [])
+          .map((uc) => uc.communaute)
+          .filter((c): c is NonNullable<typeof c> => !!c);
+        return {
+          id: u.id,
+          username: u.username,
+          nom: u.nom,
+          prenom: u.prenom,
+          profile_picture_path: u.profile_picture_path,
+          activity_score: scores[u.id],
+          communautes,
+          communaute_principale: communautes[0] ?? null,
+        };
+      });
   }
 
   private async isAdmin(userId: number): Promise<boolean> {
@@ -595,8 +788,12 @@ export class FeedService {
     };
   }
 
-  private formatPublication(pub: Record<string, unknown>) {
-    const reactions = (pub.publication_reaction_count as unknown[] ?? []) as Record<string, unknown>[];
+  private formatPublication(
+    pub: Record<string, unknown>,
+    reactions:
+      | { reaction_type_id: number | null; code?: string | null; emoji?: string | null; count: number }[]
+      | undefined = [],
+  ) {
     const hashtags = (pub.publication_hashtag as unknown[] ?? []) as Record<string, unknown>[];
     return {
       id: pub.id,
@@ -606,9 +803,9 @@ export class FeedService {
       commentaires_count: pub.commentaires_count ?? 0,
       reactions: reactions.map((rc) => ({
         reaction_type_id: rc.reaction_type_id,
-        code: (rc.reaction_type as Record<string, unknown>)?.code,
-        emoji: (rc.reaction_type as Record<string, unknown>)?.emoji,
-        count: rc.count ?? 0,
+        code: rc.code,
+        emoji: rc.emoji,
+        count: rc.count,
       })),
       hashtags: hashtags
         .filter((ph) => ph.hashtag)

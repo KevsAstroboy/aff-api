@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt } from 'class-validator';
+import { IsInt, IsOptional } from 'class-validator';
 
 export class CreateReactionDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  publication_id: number;
+  @IsOptional()
+  publication_id?: number;
 
   @ApiProperty({ example: 1 })
   @IsInt()

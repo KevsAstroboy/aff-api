@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS profil (
     libelle VARCHAR(255),
     code VARCHAR(255),
     features_version INT4 DEFAULT 1,  -- incrémentée par trigger feature_profil
+    description VARCHAR(255),
+    niveau INT4 DEFAULT 1,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     deleted_at TIMESTAMP,
@@ -421,6 +423,13 @@ CREATE TABLE IF NOT EXISTS masterclass (
     evenement_id INT4 UNIQUE REFERENCES programme_evenement(id),
     communaute_id INT4 REFERENCES communaute(id),
     mode_diffusion_id INT4 REFERENCES mode_diffusion(id),
+    expert VARCHAR(255),
+    titre VARCHAR(255),
+    description TEXT,
+    jour DATE,
+    heure_debut TIME,
+    heure_fin TIME,
+    lieu_id INT4 REFERENCES lieu(id),
     meeting_url VARCHAR(255),
     max_participants INT4,
     participants_count INT4 DEFAULT 0,
@@ -698,16 +707,13 @@ CREATE TRIGGER trg_signalement_check_cible
     BEFORE INSERT ON signalement
     FOR EACH ROW EXECUTE FUNCTION fn_signalement_check_cible();
 
--- masterclass : présentiel => lieu (via evenement) obligatoire, meeting_url interdit
+-- masterclass : présentiel => lieu_id obligatoire, meeting_url interdit
 --               distanciel => meeting_url obligatoire, pas de contrainte sur lieu
 CREATE OR REPLACE FUNCTION fn_masterclass_check_mode() RETURNS TRIGGER AS $$
-DECLARE
-    v_lieu_id INT4;
 BEGIN
-    SELECT lieu_id INTO v_lieu_id FROM programme_evenement WHERE id = NEW.evenement_id;
     IF NEW.mode_diffusion_id = 1 THEN -- Présentiel
-        IF v_lieu_id IS NULL THEN
-            RAISE EXCEPTION 'Masterclass présentielle : lieu obligatoire sur programme_evenement';
+        IF NEW.lieu_id IS NULL THEN
+            RAISE EXCEPTION 'Masterclass présentielle : lieu_id obligatoire';
         END IF;
         IF NEW.meeting_url IS NOT NULL THEN
             RAISE EXCEPTION 'Masterclass présentielle : meeting_url doit être NULL';
@@ -733,6 +739,8 @@ BEGIN
         UPDATE masterclass SET participants_count = participants_count + 1 WHERE id = NEW.masterclass_id;
     ELSIF TG_OP = 'UPDATE' AND NEW.is_deleted AND NOT OLD.is_deleted THEN
         UPDATE masterclass SET participants_count = participants_count - 1 WHERE id = NEW.masterclass_id;
+    ELSIF TG_OP = 'UPDATE' AND NOT NEW.is_deleted AND OLD.is_deleted THEN
+        UPDATE masterclass SET participants_count = participants_count + 1 WHERE id = NEW.masterclass_id;
     END IF;
     RETURN NEW;
 END;
@@ -985,3 +993,100 @@ CREATE TABLE IF NOT EXISTS publication_media (
   created_at      TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_publication_media_pub ON publication_media (publication_id);
+
+-- Migration : colonnes modération commentaires
+ALTER TABLE commentaire ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE;
+ALTER TABLE commentaire ADD COLUMN IF NOT EXISTS hidden_reason VARCHAR(255);
+
+-- Table notifications
+CREATE TABLE IF NOT EXISTS notification (
+  id          SERIAL4 PRIMARY KEY,
+  user_id     INT4 REFERENCES "user"(id),
+  type        VARCHAR(50) NOT NULL,
+  title       VARCHAR(255) NOT NULL,
+  body        VARCHAR(255),
+  link        VARCHAR(255),
+  is_read     BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notification_user ON notification (user_id, is_read, created_at);
+
+-- Features RBAC granulaires + profils
+-- Racine MODERATION (conservée) + nouvelle racine ADMINISTRATION.
+-- Ids fixes (30+) pour éviter les collisions ; assignées au profil 4 (SUPER_ADMIN).
+INSERT INTO feature (id, parent_id, libelle, code, created_at, is_deleted) VALUES
+  (30, NULL, 'Modération', 'MODERATION', now(), false),
+  (31, 30, 'Modérer contenu', 'MODERER_CONTENU', now(), false),
+  (40, NULL, 'Administration', 'ADMINISTRATION', now(), false),
+  (41, 40, 'Accéder à l''admin', 'ACCEDER_ADMIN', now(), false),
+  (42, 40, 'Gérer le programme', 'GERER_PROGRAMME', now(), false),
+  (43, 40, 'Gérer les masterclasses', 'GERER_MASTERCLASS', now(), false),
+  (44, 40, 'Gérer les lieux', 'GERER_LIEU', now(), false),
+  (45, 40, 'Gérer les éditions', 'GERER_EDITION', now(), false),
+  (46, 40, 'Gérer les awards', 'GERER_AWARDS', now(), false),
+  (47, 40, 'Gérer les communautés', 'GERER_COMMUNAUTE', now(), false),
+  (48, 40, 'Gérer les signalements', 'GERER_SIGNALEMENTS', now(), false)
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO feature_profil (profil_id, feature_id, created_at, is_deleted) VALUES
+  (4, 31, now(), false),
+  (4, 41, now(), false),
+  (4, 42, now(), false),
+  (4, 43, now(), false),
+  (4, 44, now(), false),
+  (4, 45, now(), false),
+  (4, 46, now(), false),
+  (4, 47, now(), false),
+  (4, 48, now(), false)
+ON CONFLICT (profil_id, feature_id) DO NOTHING;
+
+-- ========================================
+-- Bloc 8 — Seed Awards (catégories + candidatures finalistes)
+-- Idempotent. Edition 2 = Édition 2026.
+-- ========================================
+
+INSERT INTO award_category (id, edition_id, theme_id, libelle, code, description, is_grand_prix, created_at, is_deleted)
+VALUES
+    (1, 2, 4, 'Meilleur Court Métrage', 'MEILLEUR_COURT_METRAGE', 'Récompense le meilleur court métrage de l''édition', false, now(), false),
+    (2, 2, 3, 'Meilleur Créateur Mode', 'MEILLEUR_CREATEUR_MODE', 'Récompense le créateur mode le plus marquant', false, now(), false),
+    (3, 2, 4, 'Meilleur Artiste Digital', 'MEILLEUR_ARTISTE_DIGITAL', 'Récompense le meilleur artiste digital', false, now(), false),
+    (4, 2, 2, 'Meilleur Album de l''Année', 'MEILLEUR_ALBUM_ANNEE', 'Récompense le meilleur album de l''année', false, now(), false),
+    (5, 2, 6, 'Entrepreneur de l''Année', 'ENTREPRENEUR_ANNEE', 'Récompense l''entrepreneur le plus inspirant', false, now(), false),
+    (6, 2, 7, 'Grand Prix Africa Future', 'GRAND_PRIX_AFRICA_FUTURE', 'Trophée suprême de la compétition', true, now(), false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO candidature (id, user_id, categorie_id, edition_id, description, portfolio_url, statut_id, submitted_at, created_at, updated_at, is_deleted)
+VALUES
+    (1,  2, 1, 2, 'Un court métrage sur la résilience des jeunes créateurs abidjanais.', 'https://portfolio.example.com/kemi', 3, now(), now(), now(), false),
+    (2,  3, 1, 2, 'Réalisatrice émergente, documentaire autour de la mode africaine.', NULL,                        3, now(), now(), now(), false),
+    (3,  4, 1, 2, 'Projet d''animation 3D ancré dans les contes ouest-africains.', NULL,                          3, now(), now(), now(), false),
+    (4,  6, 2, 2, 'Collection inspirée des tissus wax et de l''artisanat local.', 'https://portfolio.example.com/imane', 3, now(), now(), now(), false),
+    (5,  7, 2, 2, 'Créateur mode upcycling, collection zéro déchet.', NULL,                                       3, now(), now(), now(), false),
+    (6,  9, 3, 2, 'Artiste digital, installations immersives en réalité augmentée.', NULL,                       1, now(), now(), now(), false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Resync séquences après inserts explicites (évite conflit id sur prochaine candidature)
+SELECT setval(pg_get_serial_sequence('candidature', 'id'), COALESCE((SELECT MAX(id) FROM candidature), 1));
+SELECT setval(pg_get_serial_sequence('vote_public', 'id'), COALESCE((SELECT MAX(id) FROM vote_public), 1));
+
+-- ========================================
+-- Bloc 9 — Portfolio (galerie d'images dédiée)
+-- ========================================
+CREATE TABLE IF NOT EXISTS portfolio (
+  id          SERIAL4 PRIMARY KEY,
+  user_id     INT4 REFERENCES "user"(id) ON DELETE CASCADE,
+  titre       VARCHAR(255) DEFAULT '',
+  description TEXT,
+  categorie   VARCHAR(100) DEFAULT '',
+  annee       INT4,
+  file_path   VARCHAR(500) NOT NULL,
+  ordre       INT4 DEFAULT 0,
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW(),
+  is_deleted  BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio (user_id) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_portfolio_user_ordre ON portfolio (user_id, ordre) WHERE is_deleted = false;
+
+-- Séquence portfolio synchronisée
+SELECT setval(pg_get_serial_sequence('portfolio', 'id'), COALESCE((SELECT MAX(id) FROM portfolio), 1));

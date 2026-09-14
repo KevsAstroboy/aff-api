@@ -17,7 +17,20 @@ export class CommunauteService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(subscribedByUserId?: number) {
+    if (subscribedByUserId) {
+      const subs = await this.prisma.user_communaute.findMany({
+        where: { user_id: subscribedByUserId, is_deleted: false },
+        select: { communaute_id: true },
+      });
+      const ids = subs.map((s) => s.communaute_id).filter((id) => id !== null);
+      if (ids.length === 0) return [];
+      return this.prisma.communaute.findMany({
+        where: { id: { in: ids as number[] }, is_deleted: false },
+        orderBy: { libelle: 'asc' },
+      });
+    }
+
     return this.prisma.communaute.findMany({
       where: { is_deleted: false },
       orderBy: { libelle: 'asc' },

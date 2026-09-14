@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -14,6 +15,11 @@ import { ModerationModule } from './moderation/moderation.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { MessagerieModule } from './messagerie/messagerie.module';
 import { MediaModule } from './media/media.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FeatureProfilModule } from './feature-profil/feature-profil.module';
+import { LieuModule } from './lieu/lieu.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -22,6 +28,7 @@ import { AppController } from './app.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    EventEmitterModule.forRoot(),
     MailModule,
     PrismaModule,
     RedisModule,
@@ -36,6 +43,11 @@ import { AppController } from './app.controller';
     AdminDashboardModule,
     MessagerieModule,
     MediaModule,
+    NotificationsModule,
+    FeatureProfilModule,
+    LieuModule,
+    PortfolioModule,
+    UsersModule,
   ],
   controllers: [AppController],
 })

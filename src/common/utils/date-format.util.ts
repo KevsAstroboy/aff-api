@@ -38,6 +38,8 @@ export function transformDates(
   customFormat?: string,
 ): unknown {
   if (obj === null || obj === undefined) return obj;
+  if (Buffer.isBuffer(obj)) return obj;
+  if (ArrayBuffer.isView(obj)) return obj;
 
   if (obj instanceof Date) {
     return formatDate(obj, customFormat ?? 'dd/MM/yyyy HH:mm:ss');

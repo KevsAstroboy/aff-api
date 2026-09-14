@@ -12,6 +12,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -89,6 +90,17 @@ export class ProgrammeController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   getFavoris(@Request() req: AuthenticatedRequest) {
     return this.programmeService.getFavoris(req.user.sub);
+  }
+
+  @Get('masterclass')
+  @ApiOperation({
+    summary: 'Liste des masterclasses',
+    description:
+      'Filtres, tri, pagination via DSL. Opérateurs: eq, neq, gt, gte, lt, lte, in, nin, like, bt, null, nnull. Ex: ?statut_id.nin=3,4&sort=-created_at&page=1&size=20&fields=id,evenement_id&include=programme_evenement',
+  })
+  @ApiResponse({ status: 200, description: 'Liste paginée des masterclasses' })
+  async getMasterclasses(@Query() query: Record<string, string>) {
+    return this.programmeService.getMasterclassesByCriteria(query);
   }
 
   @Get(':id')
@@ -217,7 +229,33 @@ export class ProgrammeController {
     return this.programmeService.updateMasterclass(id, dto);
   }
 
+  @Delete('masterclass/:id')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('GERER_PROGRAMME')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Supprimer une masterclass (soft-delete)',
+    description: 'Réservé aux administrateurs.',
+  })
+  @ApiResponse({ status: 200, description: 'Masterclass supprimée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Masterclass introuvable' })
+  removeMasterclass(@Param('id', ParseIntPipe) id: number) {
+    return this.programmeService.removeMasterclass(id);
+  }
+
   // ─── Inscriptions ─────────────────────────────────────────────
+
+  @Get('masterclass/mes-inscriptions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mes inscriptions masterclass' })
+  @ApiResponse({ status: 200, description: 'Liste de mes inscriptions' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  getMyInscriptions(@Request() req: AuthenticatedRequest) {
+    return this.programmeService.getMyInscriptions(req.user.sub);
+  }
 
   @Post('masterclass/:id/inscription')
   @UseGuards(JwtAuthGuard)
@@ -265,6 +303,43 @@ export class ProgrammeController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.programmeService.unsubscribe(req.user.sub, id);
+  }
+
+  @Get('masterclass/:id/billet')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Billet de masterclass (infos + QR base64)',
+    description: "Réservé aux inscrits. Retourne les informations de la session et un QR code.",
+  })
+  @ApiResponse({ status: 200, description: 'Billet JSON (QR inclus)' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Non inscrit' })
+  @ApiResponse({ status: 404, description: 'Masterclass introuvable' })
+  getBillet(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    return this.programmeService.getBillet(req.user.sub, id);
+  }
+
+  @Get('masterclass/:id/billet.pdf')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Billet officiel en PDF',
+    description: "Génère un PDF imprimable avec QR code. Réservé aux inscrits.",
+  })
+  @ApiResponse({ status: 200, description: 'Fichier PDF' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Non inscrit' })
+  @ApiResponse({ status: 404, description: 'Masterclass introuvable' })
+  async getBilletPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const buffer = await this.programmeService.getBilletPdf(req.user.sub, id);
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="billet-masterclass-${id}.pdf"`,
+    });
   }
 
   // ─── Favoris ──────────────────────────────────────────────────

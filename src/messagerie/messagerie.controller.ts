@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Body,
@@ -40,6 +41,7 @@ export class MessagerieController {
     description:
       'Retourne toutes les conversations où l\'utilisateur est participant, avec aperçu du dernier message.',
   })
+  @ApiQuery({ name: 'type_id', required: false, type: Number, description: '1=Direct, 2=Groupe' })
   @ApiResponse({
     status: 200,
     description: 'Liste des conversations',
@@ -50,8 +52,14 @@ export class MessagerieController {
     description: 'Non authentifié',
     schema: { example: { message: 'Unauthorized', statusCode: 401 } },
   })
-  findUserConversations(@Request() req: AuthenticatedRequest) {
-    return this.messagerieService.findUserConversations(req.user.sub);
+  findUserConversations(
+    @Request() req: AuthenticatedRequest,
+    @Query('type_id') typeId?: string,
+  ) {
+    return this.messagerieService.findUserConversations(
+      req.user.sub,
+      typeId ? parseInt(typeId, 10) : undefined,
+    );
   }
 
   @Post('conversations')
@@ -193,5 +201,25 @@ export class MessagerieController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.messagerieService.getMessages(id, req.user.sub, page, limit);
+  }
+
+  @Patch('conversations/:id/read')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Marquer une conversation comme lue',
+    description: 'Met à jour le dernier lu de l\'utilisateur pour la conversation.',
+  })
+  @ApiResponse({ status: 200, description: 'Conversation marquée comme lue' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({
+    status: 404,
+    description: 'Participant introuvable',
+    schema: { example: { message: 'Participant introuvable', error: 'Not Found', statusCode: 404 } },
+  })
+  markAsRead(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.messagerieService.markAsRead(id, req.user.sub);
   }
 }

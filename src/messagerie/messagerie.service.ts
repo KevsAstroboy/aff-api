@@ -158,9 +158,13 @@ export class MessagerieService {
     return conversation;
   }
 
-  async findUserConversations(userId: number) {
+  async findUserConversations(userId: number, typeId?: number) {
     const participants = await this.prisma.conversation_participant.findMany({
-      where: { user_id: userId, is_deleted: false },
+      where: {
+        user_id: userId,
+        is_deleted: false,
+        ...(typeId && { conversation: { type_id: typeId, is_deleted: false } }),
+      },
       include: {
         conversation: {
           include: {
@@ -439,8 +443,12 @@ export class MessagerieService {
       this.messageModel.countDocuments({ conversation_id: conversationId }),
     ]);
 
+    // Chronological order (oldest → newest) for display: the DB returns the
+    // most recent page, so reverse it so messages render top → bottom.
+    const chrono = messages.reverse();
+
     return {
-      data: messages.map((m) => ({
+      data: chrono.map((m) => ({
         _id: (m as any)._id.toString(),
         conversation_id: m.conversation_id,
         sender_id: m.sender_id,

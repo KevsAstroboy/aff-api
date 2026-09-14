@@ -29,7 +29,11 @@ import { CreateCommentaireDto } from './dto/create-commentaire.dto';
 import { CommentaireResponseDto } from './dto/commentaire-response.dto';
 import { HashtagResponseDto } from './dto/hashtag-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../auth/guards/rbac.guard';
+import { RequireFeature } from '../auth/guards/rbac.decorator';
 import { AuthenticatedRequest } from '../common/types/authenticated-request.interface';
+import { UpdateCommentStatutDto } from './dto/update-comment-statut.dto';
+import { UpdatePublicationStatutDto } from './dto/update-publication-statut.dto';
 
 @ApiTags('Feed')
 @Controller('feed')
@@ -40,18 +44,21 @@ export class FeedController {
   @ApiOperation({ summary: 'Flux de publications paginé' })
   @ApiQuery({ name: 'communaute_id', required: false, type: Number })
   @ApiQuery({ name: 'hashtag_id', required: false, type: Number })
+  @ApiQuery({ name: 'user_id', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Liste des publications', type: [PublicationResponseDto] })
   async findAll(
     @Query('communaute_id') communaute_id?: string,
     @Query('hashtag_id') hashtag_id?: string,
+    @Query('user_id') user_id?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.feedService.findAll({
       communaute_id: communaute_id ? parseInt(communaute_id) : undefined,
       hashtag_id: hashtag_id ? parseInt(hashtag_id) : undefined,
+      user_id: user_id ? parseInt(user_id) : undefined,
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
     });
@@ -72,6 +79,23 @@ export class FeedController {
   @ApiResponse({ status: 200, description: 'Liste des hashtags', type: [HashtagResponseDto] })
   async findAllHashtags() {
     return this.feedService.findAllHashtags();
+  }
+
+  @Get('membres-actifs')
+  @ApiOperation({
+    summary: 'Membres les plus actifs (7 jours)',
+    description: 'Score basé sur commentaires, réactions et publications récentes.',
+  })
+  @ApiResponse({ status: 200, description: 'Liste des membres actifs' })
+  async getMembresActifs(@Query('limit') limit?: string) {
+    return this.feedService.getMembresActifs(limit ? parseInt(limit, 10) : 10);
+  }
+
+  @Get('reaction-types')
+  @ApiOperation({ summary: 'Liste des types de réactions' })
+  @ApiResponse({ status: 200, description: 'Types de réactions' })
+  async findReactionTypes() {
+    return this.feedService.findAllReactionTypes();
   }
 
   @Get(':id')
@@ -182,5 +206,56 @@ export class FeedController {
   @ApiResponse({ status: 404, description: 'Commentaire introuvable' })
   async removeCommentaire(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
     return this.feedService.removeCommentaire(id, req.user.sub);
+  }
+
+  @Get('commentaires/get-by-criteria')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('MODERER_CONTENU')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Liste admin de tous les commentaires (modération)' })
+  @ApiResponse({ status: 200, description: 'Liste paginée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  async getCommentairesByCriteria(@Query() query: Record<string, string>) {
+    return this.feedService.getCommentairesByCriteria(query);
+  }
+
+  @Patch('commentaires/:id/statut')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('MODERER_CONTENU')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modérer un commentaire (masquer/afficher)' })
+  @ApiResponse({ status: 200, description: 'Commentaire modéré' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Commentaire introuvable' })
+  async updateCommentStatut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCommentStatutDto,
+  ) {
+    return this.feedService.updateCommentStatut(id, dto);
+  }
+
+  @Patch('publications/:id/statut')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequireFeature('MODERER_CONTENU')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modérer une publication (approuver/rejeter)' })
+  @ApiResponse({ status: 200, description: 'Publication modérée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Publication introuvable' })
+  async updatePublicationStatut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePublicationStatutDto,
+  ) {
+    return this.feedService.updatePublicationStatut(id, dto);
+  }
+
+  @Get('communautes/counts')
+  @ApiOperation({ summary: 'Nombre de publications par communauté' })
+  @ApiResponse({ status: 200, description: 'Counts par communauté' })
+  async getCountsByCommunaute() {
+    return this.feedService.getCountsByCommunaute();
   }
 }

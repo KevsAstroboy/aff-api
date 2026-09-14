@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
@@ -36,15 +37,18 @@ export class CommunauteController {
   @Get()
   @ApiOperation({
     summary: 'Lister les communautés',
-    description: 'Retourne toutes les communautés actives (non supprimées).',
+    description: 'Retourne toutes les communautés actives. Utilisez subscribed_by_user_id pour filtrer les abonnements.',
   })
+  @ApiQuery({ name: 'subscribed_by_user_id', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Liste des communautés',
     type: [CommunauteResponseDto],
   })
-  findAll() {
-    return this.communauteService.findAll();
+  findAll(@Query('subscribed_by_user_id') subscribedByUserId?: string) {
+    return this.communauteService.findAll(
+      subscribedByUserId ? parseInt(subscribedByUserId, 10) : undefined,
+    );
   }
 
   @Get('get-by-criteria')

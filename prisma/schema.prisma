@@ -99,6 +99,8 @@ model commentaire {
   created_by            Int?
   updated_by            Int?
   deleted_by            Int?
+  is_hidden             Boolean?      @default(false)
+  hidden_reason         String?       @db.VarChar(255)
   commentaire           commentaire?  @relation("commentaireTocommentaire", fields: [parent_commentaire_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_commentaire     commentaire[] @relation("commentaireTocommentaire")
   publication           publication?  @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -266,6 +268,7 @@ model lieu {
   libelle             String?               @db.VarChar(255)
   capacite            Int?
   is_deleted          Boolean?              @default(false)
+  masterclass         masterclass[]
   programme_evenement programme_evenement[]
 }
 
@@ -281,8 +284,16 @@ model masterclass {
   created_at              DateTime?                 @db.Timestamp(6)
   updated_at              DateTime?                 @db.Timestamp(6)
   is_deleted              Boolean?                  @default(false)
+  expert                  String?                   @db.VarChar(255)
+  titre                   String?                   @db.VarChar(255)
+  description             String?
+  jour                    DateTime?                 @db.Date
+  heure_debut             DateTime?                 @db.Time(6)
+  heure_fin               DateTime?                 @db.Time(6)
+  lieu_id                 Int?
   communaute              communaute?               @relation(fields: [communaute_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   programme_evenement     programme_evenement?      @relation(fields: [evenement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lieu                    lieu?                     @relation(fields: [lieu_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mode_diffusion          mode_diffusion?           @relation(fields: [mode_diffusion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   statut_masterclass      statut_masterclass?       @relation(fields: [statut_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   masterclass_inscription masterclass_inscription[]
@@ -336,6 +347,8 @@ model profil {
   created_by       Int?
   updated_by       Int?
   deleted_by       Int?
+  description      String?          @db.VarChar(255)
+  niveau           Int?             @default(1)
   feature_profil   feature_profil[]
   user_profil      user_profil[]
 }
@@ -540,6 +553,8 @@ model user {
   favori_programme                                  favori_programme[]
   jury_vote                                         jury_vote[]
   masterclass_inscription                           masterclass_inscription[]
+  notification                                      notification[]
+  portfolio                                         portfolio[]
   publication                                       publication[]
   reaction                                          reaction[]
   signalement_signalement_resolu_par_user_idTouser  signalement[]              @relation("signalement_resolu_par_user_idTouser")
@@ -604,6 +619,20 @@ model otp {
   @@index([email], map: "idx_otp_email")
 }
 
+model notification {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  type       String    @db.VarChar(50)
+  title      String    @db.VarChar(255)
+  body       String?   @db.VarChar(255)
+  link       String?   @db.VarChar(255)
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  user       user?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id, is_read, created_at], map: "idx_notification_user")
+}
+
 model publication_media {
   id             Int          @id @default(autoincrement())
   publication_id Int?
@@ -614,4 +643,19 @@ model publication_media {
   publication    publication? @relation(fields: [publication_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([publication_id], map: "idx_publication_media_pub")
+}
+
+model portfolio {
+  id          Int       @id @default(autoincrement())
+  user_id     Int?
+  titre       String?   @default("") @db.VarChar(255)
+  description String?
+  categorie   String?   @default("") @db.VarChar(100)
+  annee       Int?
+  file_path   String    @db.VarChar(500)
+  ordre       Int?      @default(0)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  user        user?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }

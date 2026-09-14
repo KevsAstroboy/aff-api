@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Body,
@@ -7,6 +8,7 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -14,6 +16,7 @@ import {
   ApiTags,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -24,6 +27,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserAdminDto } from './dto/create-user-admin.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UploadPhotoDto } from './dto/upload-photo.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RbacGuard } from './guards/rbac.guard';
@@ -116,6 +121,31 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mot de passe oublié',
+    description: "Envoie un code OTP par email pour réinitialiser le mot de passe. Ne révèle pas si l'email existe.",
+  })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({ status: 200, description: 'Code envoyé (si email existe)', schema: { example: { message: 'Si cet email est associé à un compte, un code de réinitialisation a été envoyé.' } } })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Réinitialiser le mot de passe',
+    description: 'Vérifie le code OTP et change le mot de passe.',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé', schema: { example: { message: 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.' } } })
+  @ApiResponse({ status: 400, description: 'Code invalide ou expiré', schema: { example: { message: 'Code invalide', error: 'Bad Request', statusCode: 400 } } })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
+
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -174,6 +204,43 @@ export class AuthController {
     @Body() dto: UploadPhotoDto,
   ) {
     return this.authService.uploadProfilePhoto(req.user.sub, dto.image);
+  }
+
+  @Get('profile/portfolio')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Portfolio utilisateur connecté' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({ status: 200, description: 'Publications du portfolio' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  async getPortfolio(
+    @Request() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+  ) {
+    return this.authService.getPortfolio(
+      req.user.sub,
+      limit ? parseInt(limit, 10) : 10,
+    );
+  }
+
+  @Get('profile/stats')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Statistiques du profil connecté' })
+  @ApiResponse({ status: 200, description: 'Stats utilisateur' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  async getProfileStats(@Request() req: AuthenticatedRequest) {
+    return this.authService.getProfileStats(req.user.sub);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renouveler le access_token' })
+  @ApiBody({ schema: { example: { refresh_token: 'eyJhbG...' } } })
+  @ApiResponse({ status: 200, description: 'Nouveau token', type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Refresh token invalide' })
+  async refresh(@Body('refresh_token') refreshToken: string) {
+    return this.authService.refreshToken(refreshToken);
   }
 }
 

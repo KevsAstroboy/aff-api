@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -136,6 +137,31 @@ export class AwardsController {
     return this.awardsService.getCandidaturesByCriteria(query);
   }
 
+  @Get('candidatures/mes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mes candidatures (utilisateur connecté)' })
+  @ApiResponse({ status: 200, description: 'Liste de mes candidatures' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  async getMyCandidatures(@Req() req: AuthenticatedRequest) {
+    return this.awardsService.getMyCandidatures(req.user.sub);
+  }
+
+  @Delete('candidatures/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Supprimer ma candidature (propriétaire)' })
+  @ApiResponse({ status: 200, description: 'Candidature supprimée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: "Vous ne pouvez pas supprimer cette candidature" })
+  @ApiResponse({ status: 404, description: 'Candidature introuvable' })
+  async removeCandidature(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.awardsService.removeCandidature(id, req.user.sub);
+  }
+
   @Get('candidatures/:id')
   @ApiOperation({ summary: 'Détail candidature' })
   @ApiResponse({ status: 200, description: 'Candidature', type: CandidatureResponseDto })
@@ -218,6 +244,24 @@ export class AwardsController {
   @ApiResponse({ status: 409, description: 'Déjà voté dans cette catégorie' })
   async submitPublicVote(@Req() req: AuthenticatedRequest, @Body() dto: PublicVoteDto) {
     return this.awardsService.submitPublicVote(req.user.sub, dto);
+  }
+
+  @Get('votes/mes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mes votes publics (catégories déjà votées)' })
+  @ApiResponse({ status: 200, description: 'Liste de mes votes' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  async getMyVotes(@Req() req: AuthenticatedRequest) {
+    return this.awardsService.getMyVotes(req.user.sub);
+  }
+
+  @Get('votes/public/results/:categorieId')
+  @ApiOperation({ summary: 'Résultats du vote public pour une catégorie' })
+  @ApiResponse({ status: 200, description: 'Résultats' })
+  @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
+  async getPublicResults(@Param('categorieId', ParseIntPipe) categorieId: number) {
+    return this.awardsService.getPublicResults(categorieId);
   }
 
   @Get('votes/results/:categorieId')

@@ -4,7 +4,8 @@ import { IsString, IsInt, IsOptional } from 'class-validator';
 export class CreateCommentaireDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  publication_id: number;
+  @IsOptional()
+  publication_id?: number;
 
   @ApiProperty({ example: 'Super publication !' })
   @IsString()

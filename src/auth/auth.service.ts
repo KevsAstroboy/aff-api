@@ -19,6 +19,8 @@ import { ResendOtpDto } from './dto/resend-otp.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserAdminDto } from './dto/create-user-admin.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 const SESSION_PREFIX = 'session:';
@@ -472,6 +474,63 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, is_deleted: false },
+    });
+
+    if (!user) {
+      return { message: 'Si cet email est associé à un compte, un code de réinitialisation a été envoyé.' };
+    }
+
+    await this.sendOtpForEmail(dto.email);
+    return { message: 'Si cet email est associé à un compte, un code de réinitialisation a été envoyé.' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, is_deleted: false },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Code invalide');
+    }
+
+    const otp = await this.prisma.otp.findFirst({
+      where: { email: dto.email, is_verified: false },
+      orderBy: { created_at: 'desc' },
+    });
+
+    if (!otp || otp.code !== dto.otp_code) {
+      throw new BadRequestException('Code invalide');
+    }
+
+    if (new Date() > otp.expires_at) {
+      throw new BadRequestException('Code expiré. Redemandez un code.');
+    }
+
+    const hashed = await bcrypt.hash(dto.new_password, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.otp.update({
+        where: { id: otp.id },
+        data: { is_verified: true },
+      }),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashed,
+          is_default_password: false,
+          updated_at: new Date(),
+        },
+      }),
+    ]);
+
+    this.logger.log(`Password reset for user ${user.id} (${user.email})`);
+
+    return { message: 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.' };
+  }
+
   async getSession(userId: number): Promise<SessionCache | null> {
     const raw = await this.redis.get(`${SESSION_PREFIX}${userId}`);
     if (!raw) return null;
@@ -487,6 +546,77 @@ export class AuthService {
       SESSION_TTL,
     );
     return session;
+  }
+
+  async getProfileStats(userId: number) {
+    const [publications, communautes, masterclassInscrits, awardsCandidatures, profils] =
+      await Promise.all([
+        this.prisma.publication.count({ where: { user_id: userId, is_deleted: false } }),
+        this.prisma.user_communaute.count({ where: { user_id: userId, is_deleted: false } }),
+        this.prisma.masterclass_inscription.count({ where: { user_id: userId, is_deleted: false } }),
+        this.prisma.candidature.count({ where: { user_id: userId, is_deleted: false } }),
+        this.prisma.user_profil.count({ where: { user_id: userId, is_deleted: false } }),
+      ]);
+
+    return {
+      publications_count: publications,
+      communautes_count: communautes,
+      masterclass_inscriptions_count: masterclassInscrits,
+      awards_candidatures_count: awardsCandidatures,
+      profils_count: profils,
+    };
+  }
+
+  async getPortfolio(userId: number, limit: number) {
+    const publications = await this.prisma.publication.findMany({
+      where: { user_id: userId, is_deleted: false, statut_id: 1 },
+      include: {
+        communaute: { select: { id: true, libelle: true, code: true } },
+      },
+      orderBy: { created_at: 'desc' },
+      take: limit,
+    });
+
+    const pubIds = publications.map((p) => p.id);
+    const groups = await this.prisma.reaction.groupBy({
+      by: ['publication_id'],
+      where: { publication_id: { in: pubIds }, is_deleted: false },
+      _count: { _all: true },
+    });
+    const likeByPub = new Map(groups.map((g) => [g.publication_id, g._count._all]));
+
+    const gradients = [
+      '#f97316, #8b5cf6',
+      '#8b5cf6, #3b82f6',
+      '#3b82f6, #10b981',
+      '#10b981, #f59e0b',
+      '#f59e0b, #ef4444',
+    ];
+
+    return publications.map((p, idx) => ({
+      id: p.id,
+      title: (p.contenu ?? '').slice(0, 80),
+      community: (p.communaute?.code ?? '').toLowerCase() || null,
+      year: p.created_at?.getFullYear() ?? null,
+      coverGradient: gradients[idx % gradients.length],
+      views: p.reactions_count ?? 0,
+      likes: likeByPub.get(p.id) ?? 0,
+    }));
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const user = await this.prisma.user.findFirst({
+        where: { id: payload.sub, is_deleted: false },
+      });
+      if (!user || !user.is_active) {
+        throw new UnauthorizedException('Token invalide ou compte désactivé');
+      }
+      return this.buildAuthResponse(user.id);
+    } catch {
+      throw new UnauthorizedException('Token invalide ou expiré');
+    }
   }
 
   private async sendOtpForEmail(email: string): Promise<void> {
@@ -528,8 +658,16 @@ export class AuthService {
         is_officiel: true,
         is_active: true,
         is_default_password: true,
+        user_communaute: {
+          where: { is_deleted: false },
+          select: { communaute_id: true },
+        },
       },
     });
+
+    const communaute_ids = (user.user_communaute ?? [])
+      .map((uc) => uc.communaute_id)
+      .filter((id): id is number => typeof id === 'number');
 
     const payload = { sub: userId, username: user.username ?? '' };
     const access_token = this.jwtService.sign(payload);
@@ -546,6 +684,7 @@ export class AuthService {
         is_officiel: user.is_officiel ?? false,
         is_active: user.is_active ?? true,
         is_default_password: user.is_default_password ?? false,
+        communaute_ids,
       },
       profils: session.profils,
       features: session.features,

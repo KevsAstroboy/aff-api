@@ -309,6 +309,154 @@
             },
             "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide.\n> ℹ️ Image en base64 avec préfixe mimetype (max 5 Mo).\n> ℹ️ Remplace l'ancienne photo de profil."
           }
+        },
+        {
+          "name": "Profile Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile",
+                "stats"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Permission requise | Aucune |"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"eyJhbG...\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\n> N'importe quel token JWT valide (même expiré dans la limite du TTL refresh) peut être utilisé."
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nEnvoie un code OTP pour réinitialisation. Ne révèle pas si l'email existe."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@example.com\",\n  \"otp_code\": \"123456\",\n  \"new_password\": \"NewStr0ngP@ss!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nVérifie le code OTP et change le mot de passe."
+          }
+        },
+        {
+          "name": "Portfolio",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile/portfolio?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile",
+                "portfolio"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "## Acces : Authenticated\nPortfolio des publications de l'utilisateur connecté."
+          }
         }
       ],
       "description": "🔑 **Authentification** — inscription, connexion, OTP, changement de mot de passe.\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | Register, Verify OTP, Resend OTP, Login |\n| 🔐 Auth   | Change Password |\n"
@@ -344,13 +492,19 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/communaute",
+              "raw": "{{baseUrl}}/api/communaute?subscribed_by_user_id=3",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "communaute"
+              ],
+              "query": [
+                {
+                  "key": "subscribed_by_user_id",
+                  "value": "3"
+                }
               ]
             },
             "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
@@ -860,9 +1014,193 @@
             },
             "description": "## Accès : 🌐 **Public**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Public |\n| Qui peut appeler | Tout le monde |\n| Permission requise | Aucune |\n\n> ✅ Aucune authentification requise."
           }
+        },
+        {
+          "name": "Moderate Comment (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_hidden\": true,\n  \"hidden_reason\": \"Spam\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/commentaires/1/statut",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "commentaires",
+                "1",
+                "statut"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Permission requise | `MODERER_CONTENU` |"
+          }
+        },
+        {
+          "name": "Moderate Publication (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"statut_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/publications/1/statut",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "publications",
+                "1",
+                "statut"
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Permission requise | `MODERER_CONTENU` |\n\n> statut_id: 1=Publié, 2=En attente, 3=Rejeté, 4=Signalé"
+          }
+        },
+        {
+          "name": "Comments — Get By Criteria (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/commentaires/get-by-criteria?sort=-created_at&page=1&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "commentaires",
+                "get-by-criteria"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "-created_at"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "## Accès : 🛡️ **Admin**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Admin |\n| Permission requise | `MODERER_CONTENU` |"
+          }
+        },
+        {
+          "name": "Counts par communauté",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/communautes/counts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "communautes",
+                "counts"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**"
+          }
+        },
+        {
+          "name": "Membres actifs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/membres-actifs?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "membres-actifs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nTop membres actifs (7 jours) — score basé sur commentaires, réactions, publications."
+          }
+        },
+        {
+          "name": "Types de réactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feed/reaction-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feed",
+                "reaction-types"
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nListe des types de réactions disponibles (id, code, emoji)."
+          }
         }
       ],
-      "description": "📰 **Feed** — publications, réactions, commentaires, hashtags.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /:id, GET /get-by-criteria, GET /hashtags, GET /:id/reactions, GET /:id/commentaires |\n| 🔐 Auth   | POST /publications, POST /:id/reactions, POST /:id/commentaires |\n| 🔐 Auth   | PATCH /:id (propriétaire), DELETE /:id (propriétaire/admin) |\n"
+      "description": "📰 **Feed** — publications, réactions, commentaires, hashtags.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🌐 Public | GET /, GET /:id, GET /get-by-criteria, GET /hashtags, GET /membres-actifs, GET /reaction-types, GET /communautes/counts, GET /:id/reactions, GET /:id/commentaires |\n| 🔐 Auth   | POST /publications, POST /:id/reactions, POST /:id/commentaires |\n| 🔐 Auth   | PATCH /:id (propriétaire), DELETE /:id (propriétaire/admin) |\n}"
     },
     {
       "name": "Modération",
@@ -1471,6 +1809,71 @@
       "name": "Programme",
       "item": [
         {
+          "name": "Mes Inscriptions Masterclass",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/masterclass/mes-inscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "masterclass",
+                "mes-inscriptions"
+              ]
+            },
+            "description": "## Acces : Authenticated\nListe les masterclasses auxquelles l'utilisateur connecté est inscrit."
+          }
+        },
+        {
+          "name": "List Masterclasses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programme/masterclass?include=programme_evenement,mode_diffusion,communaute&sort=-created_at&page=1&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programme",
+                "masterclass"
+              ],
+              "query": [
+                {
+                  "key": "include",
+                  "value": "programme_evenement,mode_diffusion,communaute"
+                },
+                {
+                  "key": "sort",
+                  "value": "-created_at"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "## Accès : 🌐 **Public**\n\nExclut par défaut les masterclass **Terminée (3)** et **Annulée (4)**.\nFiltres DSL: `statut_id.nin=3,4`, `sort=-created_at`, `page`, `size`, `fields`, `include`.\nFiltre édition : `edition_id=` (relation programme_evenement)."
+          }
+        },
+        {
           "name": "List Events",
           "request": {
             "method": "GET",
@@ -1803,7 +2206,7 @@
             },
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/messagerie/conversations",
+              "raw": "{{baseUrl}}/api/messagerie/conversations?type_id=1",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1811,9 +2214,15 @@
                 "api",
                 "messagerie",
                 "conversations"
+              ],
+              "query": [
+                {
+                  "key": "type_id",
+                  "value": "1"
+                }
               ]
             },
-            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide."
+            "description": "## Accès : 🔐 **Authenticated**\n\n| Propriété | Valeur |\n|-----------|--------|\n| Niveau d'accès | Authenticated |\n| Qui peut appeler | Tout utilisateur connecté |\n| Permission requise | Aucune |\n\n> ⚠️ Nécessite un token JWT valide.\n\n> Query param type_id : 1=Direct, 2=Groupe"
           }
         },
         {
@@ -2179,6 +2588,392 @@
         }
       ],
       "description": "⚙️ **Administration** — dashboard et gestion utilisateurs.\n\n### Résumé des accès\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🛡️ Admin  | Tous les endpoints (`ACCEDER_ADMIN`) |\n"
+    },
+    {
+      "name": "Notifications",
+      "description": "🔔 **Notifications** — centre de notifications utilisateur.\n\n| Niveau | Endpoints |\n|--------|----------|\n| 🔐 Auth | Tous les endpoints — utilisateur connecté requis |",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?unread_only=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**"
+          }
+        },
+        {
+          "name": "Unread Count",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**"
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/1/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "1",
+                "read"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**"
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "## Accès : 🔐 **Authenticated**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature-Profil (Admin)",
+      "description": "Gestion des profils et assignation de permissions.\n\n| Niveau | Endpoints |\n|--------|----------|\n| Auth (tous) | GET /profils, GET /features, GET /assignments |\n| Admin (ACCEDER_ADMIN) | POST/PATCH/DELETE /profils, POST /features, POST/DELETE /assignments |",
+      "item": [
+        {
+          "name": "List Profils",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/profils",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "profils"
+              ]
+            },
+            "description": "## Acces : Authenticated"
+          }
+        },
+        {
+          "name": "Create Profil",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"libelle\": \"Jury\",\n  \"code\": \"JURY\",\n  \"description\": \"Membre du jury\",\n  \"niveau\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/profils",
+              "host": [
+                "{{baseUrl}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "profils"
+              ]
+            },
+            "description": "## Acces : Admin (ACCEDER_ADMIN)"
+          }
+        },
+        {
+          "name": "Update Profil",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"libelle\": \"Jury updated\",\n  \"niveau\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/profils/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "profils",
+                "5"
+              ]
+            },
+            "description": "## Acces : Admin"
+          }
+        },
+        {
+          "name": "Delete Profil",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/profils/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "profils",
+                "5"
+              ]
+            },
+            "description": "## Acces : Admin"
+          }
+        },
+        {
+          "name": "List Features",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "features"
+              ]
+            },
+            "description": "## Acces : Authenticated"
+          }
+        },
+        {
+          "name": "List Assignments",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "assignments"
+              ]
+            },
+            "description": "## Acces : Authenticated"
+          }
+        },
+        {
+          "name": "Assign Feature",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profil_id\": 1,\n  \"feature_id\": 11\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil"
+              ]
+            },
+            "description": "## Acces : Admin"
+          }
+        },
+        {
+          "name": "Remove Assignment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/feature-profil/1/11",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "feature-profil",
+                "1",
+                "11"
+              ]
+            },
+            "description": "## Acces : Admin"
+          }
+        }
+      ]
     },
     {
       "name": "Media",

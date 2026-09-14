@@ -10,9 +10,10 @@ export class CreateCandidatureDto {
   @IsInt()
   edition_id: number;
 
-  @ApiProperty({ example: 'Description du projet candidat' })
+  @ApiPropertyOptional({ example: 'Description du projet candidat' })
   @IsString()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @ApiPropertyOptional({ example: 'https://portfolio.example.com' })
   @IsString()

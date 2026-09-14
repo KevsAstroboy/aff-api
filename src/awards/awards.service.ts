@@ -2,8 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { CriteriaParser } from '../common/criteria/criteria-parser';
@@ -55,6 +57,7 @@ export class AwardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAllCategories(edition_id?: number) {
@@ -233,6 +236,14 @@ export class AwardsService {
     };
   }
 
+  async getMyCandidatures(userId: number) {
+    return this.prisma.candidature.findMany({
+      where: { user_id: userId, is_deleted: false },
+      include: candidatureInclude,
+      orderBy: { created_at: 'desc' as const },
+    });
+  }
+
   async findOneCandidature(id: number) {
     const candidature = await this.prisma.candidature.findFirst({
       where: { id, is_deleted: false },
@@ -246,6 +257,34 @@ export class AwardsService {
     return candidature;
   }
 
+  async removeCandidature(id: number, userId: number) {
+    const candidature = await this.prisma.candidature.findFirst({
+      where: { id, is_deleted: false },
+    });
+
+    if (!candidature) {
+      throw new NotFoundException('Candidature introuvable');
+    }
+
+    if (candidature.user_id !== userId) {
+      throw new ForbiddenException("Vous ne pouvez pas supprimer cette candidature");
+    }
+
+    const now = new Date();
+
+    await this.prisma.candidature_media.updateMany({
+      where: { candidature_id: id, is_deleted: false },
+      data: { is_deleted: true },
+    });
+
+    await this.prisma.candidature.update({
+      where: { id },
+      data: { is_deleted: true, updated_at: now },
+    });
+
+    return { message: 'Candidature supprimée' };
+  }
+
   async updateCandidatureStatut(id: number, statut_id: number) {
     const candidature = await this.prisma.candidature.findFirst({
       where: { id, is_deleted: false },
@@ -255,7 +294,7 @@ export class AwardsService {
       throw new NotFoundException('Candidature introuvable');
     }
 
-    return this.prisma.candidature.update({
+    const updated = await this.prisma.candidature.update({
       where: { id },
       data: {
         statut_id,
@@ -263,6 +302,21 @@ export class AwardsService {
       },
       include: candidatureInclude,
     });
+
+    if (candidature.user_id) {
+      const statut = await this.prisma.statut_candidature.findUnique({
+        where: { id: statut_id },
+        select: { libelle: true },
+      });
+      this.eventEmitter.emit('candidature.statut', {
+        candidatUserId: candidature.user_id,
+        candidatureId: id,
+        categorieNom: updated.award_category?.libelle ?? 'Catégorie',
+        nouveauStatut: statut?.libelle ?? 'Inconnu',
+      });
+    }
+
+    return updated;
   }
 
   async uploadMedia(
@@ -333,7 +387,7 @@ export class AwardsService {
       throw new ConflictException('Vous avez déjà voté pour cette candidature');
     }
 
-    return this.prisma.jury_vote.create({
+    const vote = await this.prisma.jury_vote.create({
       data: {
         candidature_id: dto.candidature_id,
         jury_user_id: userId,
@@ -342,6 +396,19 @@ export class AwardsService {
         created_at: new Date(),
       },
     });
+
+    if (candidature.user_id) {
+      this.eventEmitter.emit('jury.vote', {
+        juryUserId: userId,
+        juryUsername: '',
+        candidatUserId: candidature.user_id,
+        candidatureId: dto.candidature_id,
+        categorieNom: '',
+        score: dto.score,
+      });
+    }
+
+    return vote;
   }
 
   async getJuryResults(categorie_id: number) {
@@ -389,6 +456,60 @@ export class AwardsService {
     return results.map((r) => ({
       ...r,
       average_score: r.average_score ? Number(r.average_score) : null,
+    }));
+  }
+
+  async getMyVotes(userId: number) {
+    const votes = await this.prisma.vote_public.findMany({
+      where: { user_id: userId, is_deleted: false },
+      select: { candidature_id: true, categorie_id: true },
+    });
+    return votes;
+  }
+
+  async getPublicResults(categorie_id: number) {
+    const category = await this.prisma.award_category.findFirst({
+      where: { id: categorie_id, is_deleted: false },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Catégorie introuvable');
+    }
+
+    const results = await this.prisma.$queryRawUnsafe<
+      Array<{
+        candidature_id: number;
+        user_id: number;
+        username: string;
+        nom: string;
+        prenom: string;
+        description: string;
+        portfolio_url: string;
+        votes_count: number;
+      }>
+    >(
+      `SELECT
+        c.id AS candidature_id,
+        c.user_id,
+        u.username,
+        u.nom,
+        u.prenom,
+        c.description,
+        c.portfolio_url,
+        COUNT(vp.id)::int AS votes_count
+      FROM candidature c
+      JOIN "user" u ON u.id = c.user_id
+      LEFT JOIN vote_public vp ON vp.candidature_id = c.id AND vp.is_deleted = false
+      WHERE c.categorie_id = $1
+        AND c.is_deleted = false
+      GROUP BY c.id, c.user_id, u.username, u.nom, u.prenom, c.description, c.portfolio_url
+      ORDER BY votes_count DESC`,
+      categorie_id,
+    );
+
+    return results.map((r) => ({
+      ...r,
+      votes_count: r.votes_count ? Number(r.votes_count) : 0,
     }));
   }
 
